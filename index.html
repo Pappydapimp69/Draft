@@ -875,6 +875,11 @@ const ENVS={
   candy:{ground:"#e88fb0",edge:"#c86f92",path:"#f2b0cc",water:"#c060a0",solid:"🍭",rock:"🍬",bldg:"#d070a0"},
   darkship:{ground:"#241f38",edge:"#181428",path:"#3a3050",water:"#5a3fb0",solid:"🕯️",rock:"💀",bldg:"#332a48"},
 };
+// building (H) and water (~) icons per environment, so no solid tile is a blank square
+const _ENVICONS={forest:["🏠","🌊"],city:["🏢","🌊"],beach:["🏠","🌊"],desert:["⛺","💧"],snow:["🏠","🧊"],
+  space:["🛸","🌀"],namek:["🛖","🌊"],ship:["🚪","⚡"],arena:["🏟️","🌊"],voidw:["🚪","💠"],sky:["🏯","☁️"],
+  kai:["🏠","🌊"],candy:["🍰","🍮"],darkship:["🚪","🟣"]};
+for(const _k in _ENVICONS){ if(ENVS[_k]){ ENVS[_k].bIcon=_ENVICONS[_k][0]; ENVS[_k].wIcon=_ENVICONS[_k][1]; } }
 const MAPS={
   paozu:{name:"Mount Paozu",env:"forest",music:"heroic",amb:420,hint:"Goku's home. Recruit allies, shop, train, then head east.",
     grid:mkGrid(24,14,"T",[{c:"H",x:3,y:2,w:2,h:2},{c:"~",x:3,y:10,w:3,h:2},{c:"T",x:9,y:4},{c:"T",x:16,y:9},{c:"T",x:7,y:11},{c:"R",x:14,y:3},{c:"R",x:19,y:8},{c:">",x:22,y:6}]),
@@ -1076,10 +1081,13 @@ function drawOW(){
     ctx.fillStyle=E.ground; ctx.fillRect(px,py,TILE,TILE);
     ctx.fillStyle="rgba(0,0,0,0.05)"; if((x+y)%2) ctx.fillRect(px,py,TILE,TILE);
     if(t===","){ ctx.fillStyle=E.path; ctx.fillRect(px+2,py+2,TILE-4,TILE-4); }
-    else if(t==="~"){ ctx.fillStyle=E.water; ctx.fillRect(px,py,TILE,TILE); ctx.fillStyle="rgba(255,255,255,.12)"; ctx.fillRect(px+4,py+6,TILE-8,3); }
+    else if(t==="~"){ ctx.fillStyle=E.water; ctx.fillRect(px,py,TILE,TILE);
+      ctx.strokeStyle="rgba(255,255,255,.25)"; ctx.lineWidth=2;
+      for(let w=0;w<2;w++){ ctx.beginPath(); ctx.arc(px+TILE/2,py+10+w*14,7,0.15*Math.PI,0.85*Math.PI); ctx.stroke(); }
+      emoji(ctx,E.wIcon||"🌊",px,py,0.7); }
     else if(t==="T"){ emoji(ctx,E.solid,px,py); }
     else if(t==="R"){ emoji(ctx,E.rock,px,py); }
-    else if(t==="H"){ ctx.fillStyle=E.bldg||"#7a5230"; ctx.fillRect(px,py,TILE,TILE); ctx.fillStyle="rgba(0,0,0,.25)"; ctx.fillRect(px,py,TILE,6); }
+    else if(t==="H"){ ctx.fillStyle=E.ground; ctx.fillRect(px,py,TILE,TILE); emoji(ctx,E.bIcon||"🏠",px,py,0.92); }
     else if(t===">"||t==="<"){ ctx.fillStyle="rgba(255,210,74,.25)"; ctx.fillRect(px,py,TILE,TILE);
       ctx.strokeStyle="#ffd24a"; ctx.lineWidth=2; ctx.strokeRect(px+4,py+4,TILE-8,TILE-8); emoji(ctx,"✨",px,py,0.7); }
   }

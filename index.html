@@ -193,6 +193,48 @@
   @keyframes csFlash{0%{opacity:0}12%{opacity:.92}100%{opacity:0}}
   .cs-crit{font-size:.46em;letter-spacing:4px;color:#ffd24a;-webkit-text-fill-color:#ffd24a;margin-bottom:2px}
   .cs-skip{position:absolute;bottom:10px;right:14px;color:#8fa2c9;font-size:12px;z-index:3;opacity:.8}
+
+  /* ---- overworld HUD extras ---- */
+  .owStats{position:absolute;top:9px;left:50%;transform:translateX(-50%);z-index:5;
+    background:rgba(10,16,32,.8);border:1px solid var(--line);border-radius:20px;padding:4px 14px;
+    font-size:13px;font-weight:bold;color:var(--gold)}
+  .menuBtn{position:absolute;top:8px;right:54px;z-index:6;width:38px;height:38px;border-radius:50%;
+    border:1px solid var(--line);background:rgba(20,28,48,.9);color:var(--ink);font-size:18px;cursor:pointer}
+  .menuBtn:active{transform:scale(.92)}
+
+  /* ---- modal overlays (menu / shop) ---- */
+  .ovl{position:absolute;inset:0;z-index:30;display:none;background:rgba(4,7,14,.82);
+    align-items:center;justify-content:center;padding:14px;padding-bottom:calc(14px + env(safe-area-inset-bottom))}
+  .ovl.show{display:flex}
+  .ovlbox{width:100%;max-width:560px;max-height:100%;display:flex;flex-direction:column;
+    background:linear-gradient(180deg,#141d33,#0c1322);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+  .ovlhead{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);font-size:17px}
+  .ovlhead b{flex:1}.ovlzeni{color:var(--gold);font-weight:bold;font-size:14px}
+  .ovlx{width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);cursor:pointer;font-size:14px}
+  .ovltabs{display:flex;gap:6px;padding:8px 12px 0}
+  .ovltabs button{flex:1;padding:8px;border:1px solid var(--line);background:var(--panel);color:var(--dim);border-radius:10px 10px 0 0;cursor:pointer;font-weight:bold}
+  .ovltabs button.on{color:var(--ink);border-color:var(--orange);background:var(--panel2)}
+  .ovlbody{padding:12px 14px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .mcard{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:10px;background:var(--panel)}
+  .mcard .top{display:flex;align-items:center;gap:10px}
+  .mcard .top canvas{width:44px;height:44px}
+  .mcard .nm{font-weight:bold}.mcard .lv{color:var(--gold);font-size:12px}
+  .mcard .xpbar{height:6px;border-radius:4px;background:#0a1020;overflow:hidden;margin-top:4px;border:1px solid #0c1526}
+  .mcard .xpbar>i{display:block;height:100%;background:linear-gradient(90deg,#ffb347,#ffd24a)}
+  .mcard .stats{font-size:12px;color:var(--dim);margin-top:6px;line-height:1.6}
+  .traitrow{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .traitrow button{padding:5px 9px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:8px;font-size:12px;cursor:pointer}
+  .traitrow button:hover:not(:disabled){border-color:var(--orange)}
+  .traitrow button:disabled{opacity:.35;cursor:not-allowed}
+  .sp{color:var(--ki2);font-size:12px;font-weight:bold}
+  .shoprow{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:9px;background:var(--panel)}
+  .shoprow .si{flex:1}.shoprow .si .nm{font-weight:bold}.shoprow .si .d{font-size:12px;color:var(--dim)}
+  .shoprow .price{color:var(--gold);font-weight:bold;font-size:13px}
+  .shoprow button{padding:7px 12px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:9px;cursor:pointer;font-weight:bold}
+  .shoprow button:hover:not(:disabled){border-color:var(--hp)}
+  .shoprow button:disabled{opacity:.4;cursor:not-allowed}
+  .userow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px}
+  .userow button{padding:5px 9px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:8px;font-size:12px;cursor:pointer}
   @media(max-width:520px){.actions .btn{font-size:12px}.hero{width:132px}}
 </style>
 </head>
@@ -225,6 +267,8 @@
       <div class="owTop">
         <div><div class="area" id="areaName">—</div><div class="hint" id="areaHint"></div></div>
       </div>
+      <div class="owStats" id="owStats"><span id="zeniDisp">✦ 0</span></div>
+      <button class="menuBtn" id="menuBtn" title="Menu (M)">☰</button>
       <button class="soundBtn" id="soundBtn" title="Sound">🔊</button>
       <div class="partyStrip" id="partyStrip"></div>
       <div class="dpad" id="dpad">
@@ -285,6 +329,23 @@
     <div class="cs-flash" id="csFlash"></div>
     <div class="cs-skip">tap / any key to skip</div>
   </div>
+
+  <!-- PARTY / STATS MENU -->
+  <div class="ovl" id="menu">
+    <div class="ovlbox">
+      <div class="ovlhead"><b>Party &amp; Skills</b><span class="ovlzeni" id="menuZeni">✦ 0</span><button class="ovlx" id="menuClose">✕</button></div>
+      <div class="ovltabs" id="menuTabs"><button class="on" data-tab="party">Fighters</button><button data-tab="items">Items</button></div>
+      <div class="ovlbody" id="menuBody"></div>
+    </div>
+  </div>
+
+  <!-- SHOP -->
+  <div class="ovl" id="shop">
+    <div class="ovlbox">
+      <div class="ovlhead"><b id="shopName">Capsule Shop</b><span class="ovlzeni" id="shopZeni">✦ 0</span><button class="ovlx" id="shopClose">✕</button></div>
+      <div class="ovlbody" id="shopBody"></div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -330,9 +391,11 @@ const SPRITES={
   dende:{type:"h",skin:"#8fce8f",gi:"#d8b84a",belt:"#7a4fd0",boots:"#7a4fd0",antennae:true,hair:"none",short:true},
   guru:{type:"h",skin:"#9fce9f",gi:"#b03a3a",pants:"#b03a3a",boots:"#5a2d2d",antennae:true,hair:"none",beard:true,beardC:"#eaeaea",big:true},
   korin:{type:"korin"},
+  trainbot:{type:"h",skin:"#c2ccdd",gi:"#5a6b8a",pants:"#39435c",boots:"#262c3c",gloves:"#8894ad",hair:"none",eye:"#39f"},
+  yamcha:{type:"h",skin:SKIN,gi:"#e07a2a",under:"#3a6bd6",pants:"#39435c",boots:"#2a3040",hair:"gohan",hairC:"#20242c"},
   default:{type:"h",skin:SKIN,gi:"#8890a0",pants:"#5a6070",boots:"#333",hair:"none"},
 };
-const NAME2SPR={"Chi-Chi":"chichi","Bulma":"bulma","Master Roshi":"roshi","Korin":"korin","Dende":"dende","Elder Guru":"guru"};
+const NAME2SPR={"Chi-Chi":"chichi","Bulma":"bulma","Master Roshi":"roshi","Korin":"korin","Dende":"dende","Elder Guru":"guru","Yamcha":"yamcha"};
 function _rr(c,x,y,w,h,r){ r=Math.min(r,w/2,h/2); c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); c.fill(); }
 function _tri(c,ax,ay,bx,by,cx,cy){ c.beginPath(); c.moveTo(ax,ay); c.lineTo(bx,by); c.lineTo(cx,cy); c.closePath(); c.fill(); }
 function drawChar(ctx,X,Y,s,key){ const sp=SPRITES[key];
@@ -645,6 +708,8 @@ const GUARD={name:"Guard",kind:"guard",ki:0,regen:22};
 const ENEMIES={
   saibaman:{name:"Saibaman",av:"🟢",au:"#6c6",hp:260,ki:40,atk:40,def:18,spd:42,pl:1200,trash:true,
     ai:["punch","selfDestruct","punch"],moves:{selfDestruct:{name:"Acid Spit",rate:1.6,ki:0,beam:"#9f9"}}},
+  trainbot:{name:"Sparring Bot",av:"🤖",au:"#9cf",hp:300,ki:60,atk:44,def:22,spd:46,pl:2000,trash:true,
+    ai:["punch","blast","punch"],moves:{blast:{name:"Practice Blast",rate:1.7,ki:0,beam:"#9cf"}}},
   raditz:{name:"Raditz",av:"👹",au:"#8a5",hp:420,ki:60,atk:50,def:24,spd:44,pl:1500,
     ai:["punch","punch","doubleSunday"],moves:{doubleSunday:{name:"Double Sunday",rate:2.0,ki:0,beam:"#9f9"}}},
   nappa:{name:"Nappa",av:"👺",au:"#c66",hp:640,ki:60,atk:60,def:34,spd:36,pl:4000,
@@ -671,7 +736,7 @@ const STORY=["raditz","nappa","vegeta_s","ginyu","frieza","cell","buu","kidbuu"]
 /* =====================================================================
    PERSISTENT PARTY (carries HP/ki across the world)
    ===================================================================== */
-const S={ party:[], heroes:[], storyIdx:0, map:null, mapId:null, over:false, cleared:new Set(), recruited:new Set() };
+const S={ party:[], heroes:[], storyIdx:0, map:null, mapId:null, over:false, cleared:new Set(), recruited:new Set(), zeni:0, inventory:{} };
 const PARTY_MAX=3;
 function recruitMember(fid){
   if(S.recruited.has(fid) || S.heroes.some(h=>h.fid===fid)) return false;
@@ -688,22 +753,54 @@ function recruitMember(fid){
   drawPartyStrip();
   return true;
 }
-function levelOf(){ return 1 + (S.storyIdx>=3?1:0) + (S.storyIdx>=5?2:0) + (S.storyIdx>=7?2:0); }
-function makeHero(fid){
-  const f=FIGHTERS[fid]; const lv=levelOf(); const g=1+0.16*(lv-1);
-  return {fid,name:f.name,av:f.av,au:f.au,
-    maxHp:Math.round(f.hp*g),hp:Math.round(f.hp*g),maxKi:Math.round(f.ki*(1+0.09*(lv-1))),ki:Math.round(f.ki*(1+0.09*(lv-1))),
-    atk:Math.round(f.atk*g),def:Math.round(f.def*g),spd:f.spd,pl:BigInt(f.pl)*BigInt(Math.round(g*100))/100n};
+/* ---------- XP · levels · traits · stats ---------- */
+const MAXLV=40;
+const TRAITS=[["hp","+HP"],["ki","+Ki"],["atk","+ATK"],["def","+DEF"],["spd","+SPD"],["crit","+Crit"]];
+function xpNeed(lvl){ return Math.floor(70*Math.pow(lvl,1.45)); }   // xp needed to advance FROM this level
+function avgLevel(){ return S.heroes.length?Math.round(S.heroes.reduce((s,h)=>s+h.level,0)/S.heroes.length):1; }
+function applyStats(h){
+  const f=FIGHTERS[h.fid], t=h.traits, lm=1+0.085*(h.level-1);
+  h.maxHp=Math.round(f.hp*lm*(1+0.06*t.hp));
+  h.maxKi=Math.round(f.ki*(1+0.06*(h.level-1))*(1+0.06*t.ki));
+  h.atk=Math.round(f.atk*lm*(1+0.05*t.atk));
+  h.def=Math.round(f.def*lm*(1+0.05*t.def));
+  h.spd=Math.round(f.spd*(1+0.03*t.spd));
+  h.crit=0.12+0.02*t.crit;
+  h.kiMult=Math.max(1,h.maxKi/f.ki);        // ki move costs scale WITH the pool (dbz-combat#E4)
+  h.pl=BigInt(f.pl)*BigInt(Math.round(lm*100*(1+0.05*t.atk)))/100n;
+  if(h.hp!=null)h.hp=Math.min(h.hp,h.maxHp); if(h.ki!=null)h.ki=Math.min(h.ki,h.maxKi);
 }
+function makeHero(fid){
+  const h={fid,name:FIGHTERS[fid].name,av:FIGHTERS[fid].av,au:FIGHTERS[fid].au,
+    level:1,xp:0,sp:0,traits:{hp:0,ki:0,atk:0,def:0,spd:0,crit:0}};
+  applyStats(h); h.hp=h.maxHp; h.ki=h.maxKi; return h;
+}
+function gainXP(h,amt){ h.xp+=amt; let ups=0;
+  while(h.level<MAXLV && h.xp>=xpNeed(h.level)){ h.xp-=xpNeed(h.level); h.level++; h.sp+=3; ups++; }
+  applyStats(h); if(ups){ h.hp=h.maxHp; h.ki=h.maxKi; }  // level-up fully restores
+  return ups;
+}
+function spendTrait(h,key){ if(h.sp<=0)return false; h.sp--; h.traits[key]++;
+  const hpR=h.hp/h.maxHp,kiR=h.ki/h.maxKi; applyStats(h); h.hp=Math.round(h.maxHp*hpR); h.ki=Math.round(h.maxKi*kiR); return true; }
 function healParty(frac){ S.heroes.forEach(h=>{ h.hp=Math.min(h.maxHp,Math.round(h.hp+h.maxHp*frac)); h.ki=Math.min(h.maxKi,Math.round(h.ki+h.maxKi*frac)); }); }
 function fullHeal(){ S.heroes.forEach(h=>{ h.hp=h.maxHp; h.ki=h.maxKi; }); }
-function rescaleHeroes(){ // grow persistent heroes when level increases, preserving damage taken ratio
-  S.heroes.forEach(h=>{ const f=FIGHTERS[h.fid]; const lv=levelOf(); const g=1+0.16*(lv-1);
-    const hpR=h.hp/h.maxHp, kiR=h.ki/h.maxKi;
-    h.maxHp=Math.round(f.hp*g); h.maxKi=Math.round(f.ki*(1+0.09*(lv-1)));
-    h.atk=Math.round(f.atk*g); h.def=Math.round(f.def*g);
-    h.hp=Math.round(h.maxHp*hpR); h.ki=Math.round(h.maxKi*kiR);
-    h.pl=BigInt(f.pl)*BigInt(Math.round(g*100))/100n; }); }
+function rescaleHeroes(){ S.heroes.forEach(applyStats); }
+
+/* ---------- economy: currency + items ---------- */
+const ITEMS={
+  hcap:{name:"Health Capsule",desc:"Restore 45% HP to an ally",price:60,use:"heal",amt:0.45},
+  kcap:{name:"Ki Capsule",desc:"Restore 55% ki to an ally",price:55,use:"ki",amt:0.55},
+  senzu:{name:"Senzu Bean",desc:"Fully revive & heal an ally",price:240,use:"revive"},
+};
+const SHOP_STOCK=["hcap","kcap","senzu"];
+function addItem(id,n){ S.inventory[id]=(S.inventory[id]||0)+(n||1); }
+function itemCount(id){ return S.inventory[id]||0; }
+function applyItem(id,h){ const it=ITEMS[id]; if(!it)return false;
+  if(it.use==="heal"){ if(h.hp<=0)return false; h.hp=Math.min(h.maxHp,Math.round(h.hp+h.maxHp*it.amt)); }
+  else if(it.use==="ki"){ h.ki=Math.min(h.maxKi,Math.round(h.ki+h.maxKi*it.amt)); }
+  else if(it.use==="revive"){ h.hp=h.maxHp; h.ki=h.maxKi; }
+  return true; }
+function costOf(u,m){ return Math.round((m.ki||0)*(u&&u.kiMult||1)); }  // ki cost scales with pool
 
 /* =====================================================================
    OVERWORLD — tile maps, grid movement, NPCs, encounters
@@ -711,92 +808,84 @@ function rescaleHeroes(){ // grow persistent heroes when level increases, preser
    one role per entity (waiting-city#E3); NPC lines from live state.
    ===================================================================== */
 const TILE=40;
-// legend: . grass  , path  T tree(solid)  ~ water(solid)  R rock(solid)  H house(solid)  space=grass
+// legend: . grass  , path  T tree(solid)  ~ water(solid)  R rock(solid)  H house(solid)  > < warp
+// Grids are generated so tile counts are always correct; features are stamped as rects (interior only).
+function mkGrid(w,h,border,feats){
+  const g=[];
+  for(let y=0;y<h;y++){ let row=""; for(let x=0;x<w;x++) row+=(x===0||y===0||x===w-1||y===h-1)?border:"."; g.push(row); }
+  (feats||[]).forEach(function(f){
+    for(let yy=f.y; yy<f.y+(f.h||1); yy++){
+      for(let xx=f.x; xx<f.x+(f.w||1); xx++){
+        if(yy>0&&yy<h-1&&xx>0&&xx<w-1){ const s=g[yy]; g[yy]=s.slice(0,xx)+f.c+s.slice(xx+1); }
+      }
+    }
+  });
+  return g;
+}
 const MAPS={
-  paozu:{name:"Mount Paozu",hint:"Home of Goku. Talk to everyone, then face what lands to the east.",
+  paozu:{name:"Mount Paozu",hint:"Goku's home. Recruit allies, shop, train, then face what lands to the east.",
     amb:420, music:"overworld",
-    grid:[
-      "TTTTTTTTTTTTTTTTTT",
-      "T....,,,,....TTT..T",
-      "T.HH.,..,.T....T..T",
-      "T.HH.,..,.T..RR...T",
-      "T....,..,........>T",
-      "T..T.,,,,,,,,,,...T",
-      "T..T.....,....T..RT",
-      "T....RR..,..T.....T",
-      "T.~~.....,....TT..T",
-      "T.~~..T..,,,,.....T",
-      "TTTTTTTTTTTTTTTTTTT",
-    ],
+    grid:mkGrid(24,14,"T",[
+      {c:"H",x:3,y:2,w:2,h:2},{c:"~",x:3,y:10,w:3,h:2},
+      {c:"T",x:9,y:4},{c:"T",x:10,y:5},{c:"T",x:16,y:9},{c:"T",x:17,y:9},{c:"T",x:7,y:11},{c:"T",x:20,y:3},
+      {c:"R",x:14,y:3},{c:"R",x:19,y:7},{c:"R",x:11,y:9},{c:">",x:22,y:6},
+    ]),
     npcs:[
-      {x:3,y:2,av:"👧",name:"Chi-Chi",lines:["Goku! You're really going out there?","Come back safe... and make sure Gohan studies!"]},
-      {x:8,y:6,av:"👩‍🔧",name:"Bulma",lines:["My scouter's going crazy — power levels dropping from the sky!","Two Saiyans. One's your brother. Head EAST when you're ready."]},
-      {x:12,y:8,av:"🐢",name:"Master Roshi",lines:["Remember the basics: Ki runs out. Don't spam your biggest blast.","Each attack has a purpose — pierce, burst, control. Use the right one."]},
+      {x:6,y:2,av:"👧",name:"Chi-Chi",lines:["Goku! You're really going out there?","Come back safe — and make sure Gohan studies!"]},
+      {x:9,y:2,av:"👩‍🔧",name:"Bulma",role:"shop",shopName:"Capsule Corp",lines:["Power levels are dropping from the sky!","Stock up on capsules before you fight."]},
+      {x:13,y:11,av:"🐢",name:"Master Roshi",lines:["Ki runs out — don't just spam your biggest blast.","Each attack has a purpose: pierce, burst, control."]},
+      {x:18,y:6,av:"🐺",name:"Yamcha",role:"train",lines:["Need practice? Spar with my bots any time.","Beat 'em for XP and Zeni — come back whenever."]},
     ],
-    enemies:[{x:6,y:4,eid:"saibaman"}],
+    enemies:[{x:11,y:6,eid:"saibaman"},{x:15,y:10,eid:"saibaman"},{x:8,y:8,eid:"saibaman"},{x:20,y:9,eid:"saibaman"}],
     recruits:[
-      {x:4,y:3,fid:"gohan",intro:["Dad! I want to help fight too!","...Alright, Gohan. Stay close to me."]},
-      {x:13,y:6,fid:"piccolo",intro:["The Saiyans threaten my world too, Goku.","A temporary alliance, then — I'll fight beside you."]},
+      {x:6,y:6,fid:"gohan",intro:["Dad! I want to help fight too!","...Alright, Gohan. Stay close to me."]},
+      {x:15,y:4,fid:"piccolo",intro:["The Saiyans threaten my world too, Goku.","A temporary alliance — I'll fight beside you."]},
     ],
-    boss:{x:16,y:4,storyIdx:0,name:"Raditz",av:"👹",intro:["So this is Earth... and you must be Kakarot's friends.","Prepare yourselves!"]},
-    exits:[{x:17,y:4,to:"wasteland",tx:1,ty:4}],
-    start:{x:2,y:4},
+    boss:{x:21,y:6,storyIdx:0,name:"Raditz",av:"👹",intro:["So this is Earth... you must be Kakarot's friends.","Prepare yourselves!"]},
+    exits:[{x:22,y:6,to:"wasteland",tx:2,ty:6}],
+    start:{x:3,y:6},
   },
-  wasteland:{name:"Rocky Wasteland",hint:"The Saiyans have landed. Rest at Korin's, then push on.",
+  wasteland:{name:"Rocky Wasteland",hint:"The Saiyans landed. Rest at Korin's, train, shop, then push east.",
     amb:300, music:"battle",
-    grid:[
-      "RRRRRRRRRRRRRRRRRR",
-      "<...R....RR....R..R",
-      "R..R...RR....RR...R",
-      "R....RR....R....R.R",
-      "<........RR....RR.R",
-      "R.RR...R.....R....R",
-      "R....RR...RR....R.R",
-      "R.R....R.....RR...R",
-      "R....RR..R.....R.>R",
-      "R..R.....RR..R....R",
-      "RRRRRRRRRRRRRRRRRRR",
-    ],
+    grid:mkGrid(24,14,"R",[
+      {c:"R",x:5,y:3,w:2},{c:"R",x:10,y:8,w:2},{c:"R",x:15,y:4},{c:"R",x:18,y:10},{c:"R",x:8,y:11},{c:"R",x:13,y:6},
+      {c:"<",x:1,y:6},{c:">",x:22,y:7},
+    ]),
     npcs:[
-      {x:4,y:6,av:"🐱",name:"Korin",heal:true,lines:["Take a Senzu Bean — you'll be good as new.","Come back any time your ki runs low."]},
+      {x:5,y:10,av:"🐱",name:"Korin",heal:true,lines:["Have a Senzu — good as new!","Come back any time your ki runs low."]},
+      {x:8,y:3,av:"👩‍🔧",name:"Bulma",role:"shop",shopName:"Capsule Corp",lines:["Set up shop out here too.","Restock before you take on Vegeta."]},
+      {x:19,y:4,av:"🐺",name:"Yamcha",role:"train",lines:["Grinding a few levels? Smart.","Spar as much as you like."]},
     ],
-    enemies:[{x:7,y:3,eid:"saibaman"},{x:11,y:7,eid:"saibaman"}],
+    enemies:[{x:11,y:5,eid:"saibaman"},{x:14,y:9,eid:"saibaman"},{x:17,y:6,eid:"saibaman"},{x:10,y:11,eid:"saibaman"}],
     recruits:[
-      {x:6,y:4,fid:"krillin",intro:["Goku! You didn't think I'd let you have all the fun?","Ha! Good to have you, Krillin."]},
+      {x:7,y:6,fid:"krillin",intro:["Goku! You didn't think I'd sit this out?","Ha! Good to have you, Krillin."]},
     ],
-    boss:{x:9,y:4,storyIdx:1,name:"Nappa",av:"👺",intro:["Hah! You're all bugs to me.","Let's see if you can even scratch me!"]},
-    boss2:{x:14,y:2,storyIdx:2,name:"Vegeta",av:"🦍",intro:["Impressive. But I am the Prince of all Saiyans.","This is where you die."]},
-    exits:[{x:0,y:1,to:"paozu",tx:16,ty:4},{x:0,y:4,to:"paozu",tx:16,ty:4},{x:17,y:8,to:"namek",tx:1,ty:5}],
-    start:{x:1,y:4},
+    boss:{x:12,y:3,storyIdx:1,name:"Nappa",av:"👺",intro:["Hah! You're all bugs to me.","Let's see if you can even scratch me!"]},
+    boss2:{x:20,y:9,storyIdx:2,name:"Vegeta",av:"🦍",intro:["I am the Prince of all Saiyans.","This is where you die."]},
+    exits:[{x:1,y:6,to:"paozu",tx:20,ty:6},{x:22,y:7,to:"namek",tx:2,ty:7}],
+    start:{x:2,y:6},
   },
-  namek:{name:"Namek & Beyond",hint:"Cross the stars: Frieza, Cell, and Buu await. Dende can heal you.",
+  namek:{name:"Namek & Beyond",hint:"Frieza, Cell, and Buu await. Dende heals; shop & train before each fight.",
     amb:520, music:"boss",
-    grid:[
-      "TTTTTTTTTTTTTTTTTT",
-      "T..~~....RR......>T",
-      "T..~~..,,,,,,....TT",
-      "T.....,......,...RT",
-      "<..,,,,...HH..,,..T",
-      "<..,.....HH..,...RT",
-      "T..,,,......,,,,..T",
-      "T.RR..,,,,,,,..T..T",
-      "T....~~~....RR....T",
-      "T....~~~.........>T",
-      "TTTTTTTTTTTTTTTTTTT",
-    ],
+    grid:mkGrid(24,15,"T",[
+      {c:"~",x:3,y:2,w:2,h:2},{c:"~",x:4,y:11,w:3,h:2},{c:"H",x:10,y:6,w:2,h:2},
+      {c:"R",x:15,y:3},{c:"T",x:7,y:8},{c:"R",x:19,y:10},{c:"T",x:13,y:11},{c:"R",x:6,y:5},
+      {c:"<",x:1,y:6},
+    ]),
     npcs:[
-      {x:10,y:4,av:"🟩",name:"Dende",heal:true,lines:["I am Dende. Let me heal you.","The universe's strongest still stand before you. Be ready."]},
-      {x:3,y:8,av:"👴",name:"Elder Guru",lines:["Your hidden power sleeps, young one.","When all seems lost, it awakens. Trust it."]},
+      {x:12,y:4,av:"🟩",name:"Dende",heal:true,lines:["I am Dende. Let me heal you.","The universe's strongest still stand before you."]},
+      {x:4,y:9,av:"👴",name:"Elder Guru",lines:["Your hidden power sleeps, young one.","When all seems lost, it awakens. Trust it."]},
+      {x:16,y:2,av:"👩‍🔧",name:"Bulma",role:"shop",shopName:"Capsule Corp",lines:["Even out here, Capsule Corp delivers.","You'll want Senzu for what's coming."]},
+      {x:9,y:9,av:"🐺",name:"Yamcha",role:"train",lines:["The final foes are monsters.","Train hard — I'll spar as long as you need."]},
     ],
-    enemies:[{x:6,y:2,eid:"saibaman"}],
-    boss:{x:8,y:2,storyIdx:3,name:"Captain Ginyu",av:"🐸",intro:["CHANGE NOW! ...ahem. The Ginyu Force never loses.","Fight!"]},
-    boss2:{x:13,y:5,storyIdx:4,name:"Frieza",av:"👾",intro:["I've destroyed a hundred planets before breakfast.","You are nothing."]},
-    boss3:{x:8,y:8,storyIdx:5,name:"Perfect Cell",av:"🪲",intro:["Welcome to the Cell Games.","Show me your desperation."]},
-    exits:[{x:0,y:4,to:"wasteland",tx:16,ty:8},{x:0,y:5,to:"wasteland",tx:16,ty:8}],
-    // Buu & Kid Buu spawn as final bosses after Cell falls
-    finalBoss:{x:15,y:2,storyIdx:6,name:"Majin Buu",av:"🍬",intro:["Buu turn you into candy!","Hee hee hee!"]},
-    finalBoss2:{x:15,y:9,storyIdx:7,name:"Kid Buu",av:"😈",intro:["...","(pure destruction incarnate)"]},
-    start:{x:1,y:5},
+    enemies:[{x:9,y:4,eid:"saibaman"},{x:18,y:8,eid:"saibaman"},{x:8,y:12,eid:"saibaman"}],
+    boss:{x:8,y:3,storyIdx:3,name:"Captain Ginyu",av:"🐸",intro:["CHANGE NOW! ...ahem. The Ginyu Force never loses.","Fight!"]},
+    boss2:{x:15,y:7,storyIdx:4,name:"Frieza",av:"👾",intro:["I've destroyed a hundred planets before breakfast.","You are nothing."]},
+    boss3:{x:11,y:11,storyIdx:5,name:"Perfect Cell",av:"🪲",intro:["Welcome to the Cell Games.","Show me your desperation."]},
+    exits:[{x:1,y:6,to:"wasteland",tx:20,ty:7}],
+    finalBoss:{x:20,y:3,storyIdx:6,name:"Majin Buu",av:"🍬",intro:["Buu turn you into candy!","Hee hee hee!"]},
+    finalBoss2:{x:20,y:12,storyIdx:7,name:"Kid Buu",av:"😈",intro:["...","(pure destruction incarnate)"]},
+    start:{x:2,y:7},
   },
 };
 
@@ -937,7 +1026,9 @@ function interactFront(){
 function interactEntity(ent){
   if(ent.type==="npc"){
     AUDIO.sfx("talk");
-    if(ent.heal){ openDialogue(ent.av,ent.name,ent.lines,()=>{ fullHeal(); drawPartyStrip(); toast("Party fully restored!"); AUDIO.sfx("win"); }); }
+    if(ent.role==="shop"){ openDialogue(ent.av,ent.name,ent.lines||["Capsule Corp, at your service!"],()=>openShop(ent.shopName||ent.name+"'s Shop")); }
+    else if(ent.role==="train"){ openDialogue(ent.av,ent.name,ent.lines||["Want to train? Let's spar!"],()=>startTraining()); }
+    else if(ent.heal||ent.role==="heal"){ openDialogue(ent.av,ent.name,ent.lines,()=>{ fullHeal(); drawPartyStrip(); toast("Party fully restored!"); AUDIO.sfx("win"); }); }
     else openDialogue(ent.av,ent.name,ent.lines);
   } else if(ent.type==="enemy"){
     AUDIO.sfx("talk");
@@ -986,10 +1077,56 @@ function toast(msg){ const t=$("#areaHint"); const prev=S.map?S.map.hint:""; t.t
 
 function drawPartyStrip(){ const box=$("#partyStrip"); box.innerHTML="";
   S.heroes.forEach(h=>{ const r=el("div","pRow");
-    r.innerHTML=`<span style="font-size:15px">${h.av}</span>
+    r.innerHTML=`<span style="font-size:15px">${h.av}</span><span style="font-size:10px;color:var(--gold)">L${h.level}</span>
       <div><div class="mini mh"><i style="width:${100*h.hp/h.maxHp}%"></i></div>
       <div class="mini mk"><i style="width:${100*h.ki/h.maxKi}%"></i></div></div>`;
-    box.appendChild(r); }); }
+    box.appendChild(r); }); updateHud(); }
+function updateHud(){ const z=$("#zeniDisp"); if(z) z.textContent="✦ "+S.zeni+" Zeni"; }
+
+/* ---------- party / skills menu ---------- */
+function openMenu(){ if(OW.dialogOpen)return; MODE="menu"; $("#menu").classList.add("show"); renderMenu(MENU_TAB); AUDIO.sfx("menu"); }
+function closeMenu(){ $("#menu").classList.remove("show"); if(!S.over)MODE="overworld"; }
+let MENU_TAB="party";
+function renderMenu(tab){ MENU_TAB=tab; $("#menuZeni").textContent="✦ "+S.zeni;
+  [...$("#menuTabs").children].forEach(b=>b.classList.toggle("on",b.dataset.tab===tab));
+  const body=$("#menuBody"); body.innerHTML="";
+  if(tab==="party"){
+    S.heroes.forEach(h=>{ const need=xpNeed(h.level); const card=el("div","mcard");
+      card.innerHTML=`<div class="top"><canvas width="88" height="88"></canvas>
+        <div style="flex:1"><span class="nm">${h.name}</span> <span class="lv">Lv ${h.level}</span>
+        <div class="xpbar"><i style="width:${h.level>=MAXLV?100:Math.floor(100*h.xp/need)}%"></i></div></div>
+        <div class="sp">${h.sp} SP</div></div>
+        <div class="stats">HP ${h.maxHp} · Ki ${h.maxKi} · ATK ${h.atk} · DEF ${h.def} · SPD ${h.spd} · Crit ${Math.round(h.crit*100)}%</div>
+        <div class="traitrow"></div>`;
+      drawChar(card.querySelector("canvas").getContext("2d"),0,0,88,h.fid);
+      const tr=card.querySelector(".traitrow");
+      TRAITS.forEach(([key,lab])=>{ const b=el("button",null,lab+" <span class='sp'>("+h.traits[key]+")</span>");
+        b.disabled=h.sp<=0; b.onclick=()=>{ if(spendTrait(h,key)){ AUDIO.sfx("menu"); renderMenu("party"); drawPartyStrip(); } }; tr.appendChild(b); });
+      body.appendChild(card); });
+  } else {
+    const owned=SHOP_STOCK.filter(id=>itemCount(id)>0);
+    if(!owned.length){ body.innerHTML='<div class="stats">No items. Buy some at a Capsule Shop.</div>'; return; }
+    owned.forEach(id=>{ const it=ITEMS[id]; const row=el("div","mcard");
+      row.innerHTML=`<div class="nm">${it.name} <span class="lv">×${itemCount(id)}</span></div><div class="stats">${it.desc}</div><div class="userow"></div>`;
+      const ur=row.querySelector(".userow");
+      const pool=(it.use==="revive")?S.heroes:S.heroes.filter(h=>h.hp>0);
+      pool.forEach(h=>{ const b=el("button",null,"Use on "+h.name);
+        b.onclick=()=>{ if(itemCount(id)>0 && applyItem(id,h)){ S.inventory[id]--; AUDIO.sfx("win"); toast(it.name+" used on "+h.name); renderMenu("items"); drawPartyStrip(); } }; ur.appendChild(b); });
+      body.appendChild(row); });
+  }
+}
+/* ---------- shop ---------- */
+function openShop(name){ MODE="shop"; $("#shopName").textContent=name||"Capsule Shop"; $("#shop").classList.add("show"); renderShop(); AUDIO.sfx("menu"); }
+function closeShop(){ $("#shop").classList.remove("show"); if(!S.over)MODE="overworld"; }
+function renderShop(){ $("#shopZeni").textContent="✦ "+S.zeni; const body=$("#shopBody"); body.innerHTML="";
+  SHOP_STOCK.forEach(id=>{ const it=ITEMS[id]; const row=el("div","shoprow");
+    row.innerHTML=`<div class="si"><div class="nm">${it.name} <span style="color:var(--dim);font-weight:normal">(have ${itemCount(id)})</span></div><div class="d">${it.desc}</div></div>
+      <div class="price">✦ ${it.price}</div><button>Buy</button>`;
+    const b=row.querySelector("button"); b.disabled=S.zeni<it.price;
+    b.onclick=()=>{ if(S.zeni>=it.price){ S.zeni-=it.price; addItem(id,1); AUDIO.sfx("win"); renderShop(); updateHud(); } };
+    body.appendChild(row); }); }
+/* ---------- training (repeatable scaled sparring) ---------- */
+function startTraining(){ const n=avgLevel()>=10?2:1; const ids=[]; for(let i=0;i<n;i++)ids.push("trainbot"); startEncounter(ids,()=>{},false); }
 
 /* =====================================================================
    BATTLE  (engine reused; ends via callback back to the overworld)
@@ -1014,8 +1151,10 @@ function mkBattleUnit(src,side,id,eid){
     maxHp:src.maxHp||src.hp, hp:src.hp!=null?src.hp:src.hp, maxKi:src.maxKi||src.ki, ki:src.ki,
     atk:src.atk,def:src.def,spd:src.spd,pl:src.pl!=null?src.pl:src.pl,
     form:null,formMult:1,formSpd:1,debuff:0,charged:null,guarding:false,dead:false,eid,hero:(side==="ally"?src:null)};
-  if(side==="ally"){ u.maxHp=src.maxHp; u.hp=src.hp; u.maxKi=src.maxKi; u.ki=src.ki; u.pl=src.pl; u.fid=src.fid; u.spr=src.fid; }
-  else { u.maxHp=src.hp; u.hp=src.hp; u.maxKi=src.ki; u.ki=src.ki; u.pl=src.pl; u.spr=eid; }
+  if(side==="ally"){ u.maxHp=src.maxHp; u.hp=src.hp; u.maxKi=src.maxKi; u.ki=src.ki; u.pl=src.pl; u.fid=src.fid; u.spr=src.fid; u.kiMult=src.kiMult||1; u.crit=src.crit||0.12; }
+  else { let sc=1; if(src.trash){ sc=1+0.07*(avgLevel()-1); } // trash scales with party so grinding stays relevant
+    u.maxHp=Math.round(src.hp*sc); u.hp=u.maxHp; u.maxKi=src.ki; u.ki=src.ki; u.atk=Math.round(src.atk*sc); u.def=Math.round(src.def*sc);
+    u.pl=(typeof src.pl==="bigint"?src.pl:BigInt(src.pl))*BigInt(Math.round(sc*100))/100n; u.spr=eid; u.kiMult=1; u.crit=0.12; }
   return u;
 }
 function livingAllies(){ return B.units.filter(u=>u.side==="ally"&&!u.dead); }
@@ -1026,7 +1165,7 @@ function computeDamage(atk,tgt,move){
   const acc=0.96-(atk.debuff>0?0.35:0); if(!chance(acc)) return {miss:true};
   const pierce=move.pierce||0; const effDef=tgt.def*(1-pierce); const K=1.4;
   let raw=power-effDef*K; raw=Math.max(power*0.18,raw); raw*=0.9+rng()*0.2;
-  let crit=false; if(chance(0.12)){ crit=true; raw*=1.7; }
+  let crit=false; if(chance(atk.crit||0.12)){ crit=true; raw*=1.7; }
   if(!move.ignoreCap){ const cap=tgt.maxHp*0.34; if(raw>cap) raw=cap; }
   return {dmg:Math.max(1,Math.floor(raw)),crit,pierced:pierce>=0.7};
 }
@@ -1091,13 +1230,32 @@ function promptPlayer(u){ $("#hud").classList.add("show"); $("#prompt").textCont
 function buildActionButtons(u){ const box=$("#actions"); box.innerHTML="";
   const list=FIGHTERS[u.fid].moves.slice().filter(mid=>{ const m=MOVES[mid];
     if(m.kind==="xform"){ if(!xformUnlocked()) return false; if(mid==="latent"&&S.storyIdx<4) return false; } return true; });
-  list.push("__guard__");
-  for(const mid of list){ const m=mid==="__guard__"?GUARD:MOVES[mid];
+  list.push("__guard__"); list.push("__items__");
+  for(const mid of list){
+    if(mid==="__items__"){ const owned=SHOP_STOCK.reduce((s,id)=>s+itemCount(id),0);
+      const b=el("button","btn k"); b.innerHTML=`<span>Items</span><small>${owned} held</small>`;
+      b.disabled=owned<=0; b.onclick=()=>openBattleItems(u); box.appendChild(b); continue; }
+    const m=mid==="__guard__"?GUARD:MOVES[mid];
     const b=el("button","btn "+(m.kind==="atk"||m.kind==="xform"?"":"k"));
     let label=m.name; if(mid===u.form) label="Revert "+m.name;
-    b.innerHTML=`<span>${label}</span>`+(m.ki?`<span class="cost">◈ ${m.ki} ki</span>`:``)+
+    const c=costOf(u,m);
+    b.innerHTML=`<span>${label}</span>`+(c?`<span class="cost">◈ ${c} ki</span>`:``)+
       `<small>${m.kind==="xform"?(mid===u.form?"turn off":"transform"):(m.axis||"")}</small>`;
-    b.disabled=!(u.ki>=(m.ki||0) && !(m.kind==="item"&&B.senzu<=0)); b.onclick=()=>chooseMove(u,mid,m); box.appendChild(b); } }
+    b.disabled=!(u.ki>=c && !(m.kind==="item"&&B.senzu<=0)); b.onclick=()=>chooseMove(u,mid,m); box.appendChild(b); } }
+function openBattleItems(u){ const box=$("#actions"); box.innerHTML=""; $("#prompt").textContent="Use an item";
+  SHOP_STOCK.forEach(id=>{ const n=itemCount(id); if(n<=0)return; const it=ITEMS[id];
+    const b=el("button","btn k"); b.innerHTML=`<span>${it.name}</span><small>×${n} · ${it.desc}</small>`;
+    b.onclick=()=>{ const allies=livingAllies().concat(B.units.filter(x=>x.side==="ally"&&x.dead&&ITEMS[id].use==="revive"));
+      const pool=(ITEMS[id].use==="revive")?B.units.filter(x=>x.side==="ally"):livingAllies();
+      if(pool.length<=1){ useBattleItem(u,id,pool[0]); } else { B.pending={itemId:id}; B.awaiting="target-item"; $("#prompt").textContent=`${it.name} — choose an ally`; enableItemTargets(id); } };
+    box.appendChild(b); });
+  const back=el("button","btn"); back.innerHTML="<span>◀ Back</span>"; back.onclick=()=>{ $("#prompt").textContent=`${u.name}'s turn — choose an action`; buildActionButtons(u); }; box.appendChild(back); }
+function enableItemTargets(id){ const revive=ITEMS[id].use==="revive";
+  B.units.forEach(x=>{ if(x.side==="ally"&&(revive||!x.dead)){ x.el.style.cursor="crosshair"; x.el.classList.add("foeglow"); x.el.onclick=()=>{ if(B.awaiting!=="target-item")return; clearTargets(); useBattleItem(B.active,id,x); }; } }); }
+function useBattleItem(u,id,t){ if(!t||itemCount(id)<=0){ return endPlayerAction(u); }
+  const was=t.dead; if(applyItem(id,t)){ S.inventory[id]--; if(was&&ITEMS[id].use==="revive")t.dead=false; updateBars(t);
+    floatText(t, ITEMS[id].use==="ki"?"+KI":"+HP","heal"); AUDIO.sfx("win"); logB(`<b>${u.name}</b> uses <b>${ITEMS[id].name}</b> on <b>${t.name}</b>.`); }
+  endPlayerAction(u); }
 function xformUnlocked(){ return S.storyIdx>=2; } // transformations awaken after the Saiyan saga
 function chooseMove(u,mid,m){ if(B.awaiting!=="action")return; AUDIO.sfx("menu");
   if(m.kind==="xform"){ toggleForm(u,mid); return endPlayerAction(u); }
@@ -1145,7 +1303,7 @@ function playAttackCutscene(attacker,target,move,crit){
     timers.push(setTimeout(finish,1200));
   });
 }
-async function doAttack(u,t,mid,m){ if(m.ki)u.ki-=m.ki; actFx(u); updateBars(u);
+async function doAttack(u,t,mid,m){ const _c=costOf(u,m); if(_c)u.ki-=_c; actFx(u); updateBars(u);
   if(m.sfx)AUDIO.sfx(m.sfx);
   if(m.slow){ logB(`<b>${u.name}</b> charges <span class="k">${m.name}</span>...`); await wait(360); } else await wait(150);
   const r=computeDamage(u,t,m);
@@ -1159,8 +1317,8 @@ async function doAttack(u,t,mid,m){ if(m.ki)u.ki-=m.ki; actFx(u); updateBars(u);
   if(t.hp<=0) await faint(t); else checkPhase(t); }
 function applyDamage(t,d){ t.hp=Math.max(0,t.hp-d); updateBars(t); }
 function doGuard(u){ u.guarding=true; u.ki=Math.min(u.maxKi,u.ki+GUARD.regen); updateBars(u); actFx(u); logB(`<b>${u.name}</b> guards — ki restored.`); }
-function doHeal(u,t,m){ if(m.ki)u.ki-=m.ki; const h=Math.floor(t.maxHp*m.heal); t.hp=Math.min(t.maxHp,t.hp+h); updateBars(u);updateBars(t); floatText(t,"+"+h,"heal"); logB(`<b>${u.name}</b> regenerates <span class="g">${h}</span> HP.`); }
-function doDebuff(u,t,m){ if(m.ki)u.ki-=m.ki; t.debuff=2; updateBars(u); actFx(u); whiteFlash(.7); floatText(t,"BLIND","miss"); logB(`<b>${u.name}</b> blinds <b>${t.name}</b> — accuracy & speed down!`); }
+function doHeal(u,t,m){ const _c=costOf(u,m); if(_c)u.ki-=_c; const h=Math.floor(t.maxHp*m.heal); t.hp=Math.min(t.maxHp,t.hp+h); updateBars(u);updateBars(t); floatText(t,"+"+h,"heal"); logB(`<b>${u.name}</b> regenerates <span class="g">${h}</span> HP.`); }
+function doDebuff(u,t,m){ const _c=costOf(u,m); if(_c)u.ki-=_c; t.debuff=2; updateBars(u); actFx(u); whiteFlash(.7); floatText(t,"BLIND","miss"); logB(`<b>${u.name}</b> blinds <b>${t.name}</b> — accuracy & speed down!`); }
 function doSenzu(u,t){ B.senzu--; const wasDead=t.dead; t.dead=false; t.hp=t.maxHp; t.ki=Math.min(t.maxKi,t.ki+40); updateBars(t); floatText(t,"REVIVE","heal"); whiteFlash(.6); AUDIO.sfx("win"); logB(`<b>${u.name}</b> tosses a Senzu — <b>${t.name}</b> ${wasDead?"revives":"restored"} to full! (${B.senzu} left)`); }
 function toggleForm(u,mid){ if(u.form===mid){ setForm(u,null); logB(`<b>${u.name}</b> powers down.`); }
   else { setForm(u,mid); const m=MOVES[mid]; whiteFlash(.85); shake(); AUDIO.sfx("transform"); logB(`<b class="g">${u.name} transforms — ${m.name}!</b> ×${m.mult} power.`); } updateBars(u); }
@@ -1203,13 +1361,30 @@ function afterEnemy(e){ $("#hud").classList.remove("show"); setTimeout(()=>advan
 function checkEnd(){ if(B.over)return true;
   if(!livingAllies().length){ B.over=true; endBattle(false); return true; }
   if(!livingEnemies().length){ B.over=true; endBattle(true); return true; } return false; }
+const REWARD={ saibaman:{xp:24,zeni:14}, trainbot:{xp:0,zeni:0}, raditz:{xp:70,zeni:45}, nappa:{xp:110,zeni:70},
+  vegeta_s:{xp:180,zeni:130}, ginyu:{xp:280,zeni:200}, frieza:{xp:640,zeni:520}, cell:{xp:950,zeni:720},
+  buu:{xp:1300,zeni:900}, kidbuu:{xp:1750,zeni:1300} };
+function computeRewards(enemyIds){ let xp=0,zeni=0; const drops=[];
+  enemyIds.forEach(eid=>{ const r=REWARD[eid]||{xp:20,zeni:10};
+    if(eid==="trainbot"){ xp+=Math.round(28*avgLevel()); zeni+=Math.round(14*avgLevel()); }
+    else { xp+=r.xp; zeni+=r.zeni; }
+    if(ENEMIES[eid]&&ENEMIES[eid].trash){ if(chance(0.35))drops.push("hcap"); if(chance(0.12))drops.push("kcap"); }
+    if(chance(0.06))drops.push("senzu"); });
+  return {xp,zeni,drops}; }
 function endBattle(won){
   // write battle HP/ki back to persistent heroes
   B.units.filter(u=>u.side==="ally").forEach(u=>{ if(u.hero){ u.hero.hp=Math.max(0,u.hp); u.hero.ki=u.ki; } });
   setTimeout(()=>{
     $("#screen-battle").classList.remove("show"); $("#hud").classList.remove("show");
-    if(won){ AUDIO.sfx("win"); const cb=B.onWin; healParty(0.15); MODE="overworld"; $("#overworld").style.display="block";
-      AUDIO.playMusic(S.map.music||"overworld"); drawPartyStrip(); if(cb) cb(); }
+    if(won){ AUDIO.sfx("win"); const cb=B.onWin;
+      // rewards: XP to every party member, Zeni, item drops (loot-pity#E2: fixed chances, no decay pool)
+      const rw=computeRewards(B.enemyIds); S.zeni+=rw.zeni; rw.drops.forEach(id=>addItem(id,1));
+      const ups=[]; S.heroes.forEach(h=>{ if(gainXP(h,rw.xp)) ups.push(h.name+" → Lv"+h.level); });
+      healParty(0.12); MODE="overworld"; $("#overworld").style.display="block";
+      AUDIO.playMusic(S.map.music||"overworld"); drawPartyStrip(); updateHud();
+      let msg=`+${rw.xp} XP · +${rw.zeni} Zeni`; if(rw.drops.length)msg+=" · found "+rw.drops.map(d=>ITEMS[d].name).join(", ");
+      toast(msg); if(ups.length) setTimeout(()=>{ AUDIO.sfx("win"); toast("LEVEL UP! "+ups.join(", ")); },1600);
+      if(cb) cb(); }
     else { // defeat: revive at Korin-less penalty, back to world
       AUDIO.sfx("down"); S.heroes.forEach(h=>{ h.hp=Math.max(1,Math.round(h.maxHp*0.4)); }); MODE="overworld";
       $("#overworld").style.display="block"; AUDIO.playMusic(S.map.music||"overworld"); drawPartyStrip();
@@ -1234,6 +1409,7 @@ function enterWorld(){
   // join automatically as the story advances.
   S.storyIdx=0; S.over=false; S.cleared=new Set(); S.recruited=new Set(["goku"]);
   S.heroes=[makeHero("goku")]; S.party=["goku"];
+  S.zeni=0; S.inventory={hcap:1};
   MODE="overworld"; show("overworld");
   OW.canvas=$("#owCanvas"); OW.ctx=OW.canvas.getContext("2d"); resizeCanvas();
   loadMap("paozu");
@@ -1257,8 +1433,12 @@ function togglePick(id,c){ const i=S.party.indexOf(id);
 /* wiring */
 $("#toRoster").onclick=()=>{ AUDIO.gesture(); AUDIO.sfx("win"); enterWorld(); };  // straight into the story — no team select
 $("#soundBtn").onclick=()=>{ AUDIO.gesture(); const on=AUDIO.toggle(); $("#soundBtn").textContent=on?"🔊":"🔇"; };
-$("#btnA").onclick=()=>{ AUDIO.gesture(); if(OW.dialogOpen){ if(OW.advance)OW.advance(); } else interactFront(); };
-$("#btnB").onclick=()=>{ AUDIO.gesture(); if(OW.dialogOpen){ if(OW.advance)OW.advance(); } };
+$("#menuBtn").onclick=()=>{ AUDIO.gesture(); if(MODE==="menu")closeMenu(); else if(MODE==="overworld")openMenu(); };
+$("#menuClose").onclick=closeMenu;
+$("#menuTabs").addEventListener("click",e=>{ const b=e.target.closest("button"); if(b){ AUDIO.sfx("menu"); renderMenu(b.dataset.tab); } });
+$("#shopClose").onclick=closeShop;
+$("#btnA").onclick=()=>{ AUDIO.gesture(); if(MODE==="menu"||MODE==="shop")return; if(OW.dialogOpen){ if(OW.advance)OW.advance(); } else interactFront(); };
+$("#btnB").onclick=()=>{ AUDIO.gesture(); if(OW.dialogOpen){ if(OW.advance)OW.advance(); } else if(MODE==="menu")closeMenu(); else if(MODE==="overworld")openMenu(); };
 // dpad (press & hold)
 document.querySelectorAll("#dpad button").forEach(b=>{
   const dir=b.dataset.dir;
@@ -1277,8 +1457,11 @@ document.addEventListener("keydown",e=>{
   if(MODE==="battle"&&B&&B.awaiting==="action"){ const btns=[...$("#actions").querySelectorAll(".btn")];
     if(/^[1-9]$/.test(e.key)){ const b=btns[+e.key-1]; if(b&&!b.disabled)b.click(); } return; }
   if(MODE==="dialogue"){ if(e.key===" "||e.key==="Enter"||e.key==="e"||e.key==="E"){ e.preventDefault(); if(OW.advance)OW.advance(); } return; }
+  if(MODE==="menu"){ if(e.key==="Escape"||e.key==="m"||e.key==="M"){ e.preventDefault(); closeMenu(); } return; }
+  if(MODE==="shop"){ if(e.key==="Escape"){ e.preventDefault(); closeShop(); } return; }
   if(MODE==="overworld"){
     if(KEYDIR[e.key]){ e.preventDefault(); OW.hold=KEYDIR[e.key]; tryMove(KEYDIR[e.key]); }
+    else if(e.key==="m"||e.key==="M"){ e.preventDefault(); openMenu(); }
     else if(e.key===" "||e.key==="Enter"||e.key==="e"||e.key==="E"){ e.preventDefault(); interactFront(); }
   }
 });
@@ -1288,7 +1471,7 @@ window.addEventListener("resize",()=>{ if(OW.canvas) resizeCanvas(); });
 // init sound button glyph
 $("#soundBtn").textContent=AUDIO.isOn()?"🔊":"🔇";
 // lightweight debug hook (state inspection; harmless in normal play)
-window.__G={ get MODE(){return MODE}, OW, S, tryMove, interactFront, AUDIO };
+window.__G={ get MODE(){return MODE}, OW, S, tryMove, interactFront, AUDIO, MAPS, tileAt, solidTile, loadMap, ENEMIES, ITEMS };
 show("screen-title");
 </script>
 </body>

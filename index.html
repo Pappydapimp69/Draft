@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Dragon Ball Z — Saga Warriors</title>
 <style>
   :root{
@@ -10,16 +10,19 @@
     --orange:#ff8a1e; --orange2:#ffb347; --ki:#4fc3ff; --ki2:#7fe0ff;
     --hp:#37d67a; --hp2:#8affb6; --danger:#ff4d5e; --gold:#ffd24a; --purple:#b07bff;
     --line:#26324f;
+    --app-h:100vh;               /* fallback; overridden by dvh + JS below */
   }
+  @supports (height:100dvh){ :root{ --app-h:100dvh; } }
   *{box-sizing:border-box}
-  html,body{margin:0;height:100%}
+  html,body{margin:0;height:var(--app-h)}
   body{
     background:radial-gradient(1200px 700px at 50% -10%,#16223f 0%,var(--bg) 60%);
     color:var(--ink);font-family:"Trebuchet MS",Segoe UI,system-ui,sans-serif;
     -webkit-user-select:none;user-select:none;overflow:hidden;
+    overscroll-behavior:none;-webkit-text-size-adjust:100%;
   }
-  #app{max-width:960px;margin:0 auto;height:100%;display:flex;flex-direction:column;position:relative}
-  .stage{flex:1;position:relative;overflow:hidden}
+  #app{max-width:960px;margin:0 auto;height:var(--app-h);display:flex;flex-direction:column;position:relative;min-height:0}
+  .stage{flex:1;position:relative;overflow:hidden;min-height:0}
   .shake{animation:shake .28s linear}
   @keyframes shake{0%,100%{transform:translate(0,0)}20%{transform:translate(-8px,3px)}
     40%{transform:translate(7px,-4px)}60%{transform:translate(-5px,5px)}80%{transform:translate(4px,-2px)}}
@@ -55,8 +58,8 @@
     font-size:11px;color:var(--dim);letter-spacing:1px;text-transform:uppercase}
 
   /* ---- battle field ---- */
-  .field{position:absolute;inset:0;display:flex;flex-direction:column}
-  .arena{flex:1;position:relative;
+  .field{position:absolute;inset:0;display:flex;flex-direction:column;min-height:0}
+  .arena{flex:1;position:relative;min-height:0;
     background:linear-gradient(180deg,#101a33 0%,#0c1428 55%,#0a1120 100%);overflow:hidden}
   .ground{position:absolute;left:0;right:0;bottom:0;height:32%;
     background:linear-gradient(180deg,#243a2a,#152417);border-top:2px solid #2f5a38;
@@ -98,7 +101,8 @@
 
   /* ---- HUD ---- */
   .hud{background:linear-gradient(180deg,#0e1526,#0a0f1e);border-top:1px solid var(--line);
-    padding:8px 10px 10px;min-height:150px;display:flex;flex-direction:column;gap:8px}
+    padding:8px 10px calc(10px + env(safe-area-inset-bottom));min-height:150px;flex:0 0 auto;
+    display:flex;flex-direction:column;gap:8px}
   .log{height:52px;overflow:hidden;font-size:12.5px;color:var(--dim);line-height:1.45;
     display:flex;flex-direction:column-reverse}
   .log b{color:var(--ink)}.log .g{color:var(--gold)}.log .r{color:var(--danger)}.log .k{color:var(--ki2)}
@@ -862,6 +866,18 @@ document.addEventListener("keydown",e=>{
     if(/^[1-9]$/.test(e.key)){ const b=btns[+e.key-1]; if(b&&!b.disabled) b.click(); }
   }
 });
+
+// Mobile viewport-height fix: when the browser lacks `dvh` support, pin
+// --app-h to the *visible* innerHeight (so the action bar never hides behind
+// the address bar) and keep it in sync on resize / rotate.
+(function(){
+  var hasDvh = window.CSS && CSS.supports && CSS.supports("height","100dvh");
+  if(hasDvh) return;
+  var set=function(){ document.documentElement.style.setProperty("--app-h", window.innerHeight+"px"); };
+  set();
+  window.addEventListener("resize", set);
+  window.addEventListener("orientationchange", function(){ setTimeout(set,150); });
+})();
 
 show("screen-title");
 </script>

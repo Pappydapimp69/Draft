@@ -48,7 +48,9 @@
     background:var(--panel);transition:.15s;position:relative}
   .hero:hover{border-color:var(--orange);transform:translateY(-3px)}
   .hero.on{border-color:var(--gold);box-shadow:0 0 0 2px rgba(255,210,74,.4) inset}
-  .hero .av{font-size:44px}.hero .nm{font-weight:bold;margin-top:4px}
+  .hero .av{height:72px;display:flex;align-items:center;justify-content:center}
+  .hero .av canvas{filter:drop-shadow(0 4px 6px rgba(0,0,0,.4))}
+  .hero .nm{font-weight:bold;margin-top:4px}
   .hero .role{color:var(--dim);font-size:11px;text-transform:uppercase;letter-spacing:1px}
   .hero .st{font-size:11px;color:var(--dim);margin-top:6px;line-height:1.5;text-align:left}
   .lede{max-width:640px;color:var(--dim);line-height:1.6;font-size:14px}
@@ -111,8 +113,8 @@
   .enemies{top:6%}.allies{bottom:14%}
   .unit{position:relative;display:flex;flex-direction:column;align-items:center;width:30%;max-width:150px}
   .unit.dead{opacity:.28;filter:grayscale(1) brightness(.6)}
-  .avatar{font-size:clamp(34px,9vw,64px);line-height:1;position:relative;transition:transform .12s,filter .2s;
-    filter:drop-shadow(0 6px 8px rgba(0,0,0,.5))}
+  .avatar{line-height:1;position:relative;transition:transform .12s,filter .2s}
+  .avatar .spr{width:clamp(54px,14vw,96px);height:auto;display:block;filter:drop-shadow(0 6px 8px rgba(0,0,0,.5))}
   .aura{position:absolute;inset:-18% -22%;border-radius:50%;z-index:-1;opacity:0;transition:opacity .25s;
     background:radial-gradient(circle,var(--au,transparent) 0%,transparent 70%);filter:blur(4px)}
   .unit.charged .aura{opacity:.9;animation:pulse 1s ease-in-out infinite}
@@ -154,6 +156,42 @@
   .actions .btn .cost{color:var(--ki2);font-size:10px}
   .prompt{font-size:13px;color:var(--orange2);font-weight:bold;text-align:center;min-height:16px}
   .foeglow{--au:var(--danger)}
+
+  /* ---- ki-attack cut-scene ---- */
+  #cutscene{position:absolute;inset:0;z-index:40;display:none;overflow:hidden}
+  .cs-bg{position:absolute;inset:0;background:radial-gradient(circle at 50% 46%,rgba(12,16,30,.45),rgba(3,5,11,.96))}
+  .cs-bg::after{content:"";position:absolute;inset:-25%;
+    background:repeating-linear-gradient(115deg,transparent 0 15px,rgba(255,255,255,.06) 15px 17px);animation:csLines .5s linear infinite}
+  @keyframes csLines{to{transform:translateX(-17px)}}
+  .cs-stage{position:absolute;inset:0;display:flex;align-items:center;justify-content:space-between;padding:0 3%}
+  .cs-fighter{position:relative;filter:drop-shadow(0 12px 26px rgba(0,0,0,.6))}
+  .cs-fighter canvas{width:min(40vw,230px);height:auto;display:block}
+  .cs-fighter.atk{animation:csAtkIn .45s cubic-bezier(.2,1.2,.3,1)}
+  .cs-fighter.tgt{transform:scaleX(-1);animation:csTgtIn .45s ease}
+  .cs-fighter.tgt.flinch{animation:csFlinch .42s ease}
+  @keyframes csAtkIn{from{transform:translateX(-45%) scale(.7);opacity:0}to{transform:none;opacity:1}}
+  @keyframes csTgtIn{from{transform:scaleX(-1) translateX(-45%);opacity:0}to{transform:scaleX(-1);opacity:1}}
+  @keyframes csFlinch{0%,100%{transform:scaleX(-1)}30%{transform:scaleX(-1) translate(16px,-7px) rotate(3deg)}65%{transform:scaleX(-1) translate(-9px,4px)}}
+  .cs-aura{position:absolute;inset:-18%;border-radius:50%;opacity:0;filter:blur(7px);
+    background:radial-gradient(circle,var(--csc,#7fe0ff) 0%,transparent 66%);animation:csAura 1.15s ease-in-out}
+  @keyframes csAura{0%{opacity:0;transform:scale(.6)}42%{opacity:.9;transform:scale(1.12)}100%{opacity:.45;transform:scale(1)}}
+  .cs-charge{position:absolute;left:30%;top:52%;width:0;height:0;border-radius:50%;transform:translate(-50%,-50%);
+    background:radial-gradient(circle,#fff 10%,var(--csc,#7fe0ff) 60%,transparent);box-shadow:0 0 34px 8px var(--csc,#7fe0ff);opacity:0}
+  .cs-charge.go{animation:csCharge .62s ease-in forwards}
+  @keyframes csCharge{0%{width:0;height:0;opacity:0}100%{width:74px;height:74px;opacity:1}}
+  .cs-beam{position:absolute;top:50%;left:14%;height:28px;width:0;transform:translateY(-50%);border-radius:16px;opacity:0;
+    background:linear-gradient(90deg,var(--csc,#7fe0ff),#fff 55%,var(--csc,#7fe0ff));box-shadow:0 0 44px 12px var(--csc,#7fe0ff)}
+  .cs-beam.fire{animation:csBeam .42s ease-out forwards}
+  @keyframes csBeam{0%{width:0;opacity:0}22%{opacity:1}100%{width:72%;opacity:1}}
+  .cs-name{position:absolute;top:15%;left:0;right:0;text-align:center;z-index:2;padding:0 12px;
+    font-size:clamp(26px,7vw,52px);font-style:italic;font-weight:900;color:#fff;letter-spacing:1px;
+    text-shadow:0 0 18px var(--csc,#7fe0ff),0 3px 8px #000;opacity:0}
+  .cs-name.show{animation:csName 1.25s ease}
+  @keyframes csName{0%{opacity:0;transform:translateY(16px) scale(.9)}18%{opacity:1;transform:none}82%{opacity:1}100%{opacity:0}}
+  .cs-flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
+  .cs-flash.go{animation:csFlash .5s ease-out}
+  @keyframes csFlash{0%{opacity:0}12%{opacity:.92}100%{opacity:0}}
+  .cs-skip{position:absolute;bottom:10px;right:14px;color:#8fa2c9;font-size:12px;z-index:3;opacity:.8}
   @media(max-width:520px){.actions .btn{font-size:12px}.hero{width:132px}}
 </style>
 </head>
@@ -232,6 +270,20 @@
     <div class="prompt" id="prompt"></div>
     <div class="actions" id="actions"></div>
   </div>
+
+  <!-- KI ATTACK CUT-SCENE -->
+  <div id="cutscene">
+    <div class="cs-bg"></div>
+    <div class="cs-name" id="csName"></div>
+    <div class="cs-stage">
+      <div class="cs-fighter atk" id="csAtkW"><canvas id="csAtk" width="230" height="230"></canvas><div class="cs-aura" id="csAura"></div></div>
+      <div class="cs-beam" id="csBeam"></div>
+      <div class="cs-fighter tgt" id="csTgtW"><canvas id="csTgt" width="230" height="230"></canvas></div>
+    </div>
+    <div class="cs-charge" id="csCharge"></div>
+    <div class="cs-flash" id="csFlash"></div>
+    <div class="cs-skip">tap / any key to skip</div>
+  </div>
 </div>
 
 <script>
@@ -253,6 +305,178 @@ function fmtPower(n){ return BigInt(n).toString().replace(/\B(?=(\d{3})+(?!\d))/
 const $=s=>document.querySelector(s);
 const el=(t,c,h)=>{const e=document.createElement(t); if(c)e.className=c; if(h!=null)e.innerHTML=h; return e;};
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
+
+/* =====================================================================
+   SPRITES — characters drawn on <canvas> (no emoji, no assets).
+   Distinct silhouette + palette per character. A missing key falls back
+   to `default` loudly-logged (answering-deep#E4: don't silently placeholder).
+   ===================================================================== */
+const SKIN="#f2c79a";
+const SPRITES={
+  goku:{type:"h",skin:SKIN,gi:"#ff8a1e",under:"#2b6bd6",pants:"#ff8a1e",belt:"#2b6bd6",boots:"#2b3a8a",hair:"goku",hairC:"#20242c"},
+  gohan:{type:"h",skin:SKIN,gi:"#7a4fd0",under:"#e04a4a",pants:"#7a4fd0",belt:"#e04a4a",boots:"#2b3a8a",hair:"gohan",hairC:"#20242c"},
+  vegeta:{type:"h",skin:SKIN,gi:"#27407a",pants:"#27407a",armor:"saiyan",armorColor:"#eef1f7",armorTrim:"#ffcf4a",gloves:"#eef1f7",boots:"#eef1f7",hair:"vegeta",hairC:"#20242c",widow:true},
+  vegeta_s:{type:"h",skin:SKIN,gi:"#27407a",pants:"#27407a",armor:"saiyan",armorColor:"#eef1f7",armorTrim:"#ffcf4a",gloves:"#eef1f7",boots:"#eef1f7",hair:"vegeta",hairC:"#20242c",widow:true,scouter:true,tail:true},
+  piccolo:{type:"h",skin:"#8fce8f",gi:"#7a4fd0",belt:"#3a6bd6",boots:"#7a4fd0",gloves:"#8fce8f",turban:"#efeef2",turbanTrim:"#7a4fd0",cape:"#efeef2",antennae:true,hair:"none"},
+  krillin:{type:"h",skin:SKIN,gi:"#ff8a1e",under:"#c0392b",pants:"#ff8a1e",belt:"#c0392b",boots:"#c0392b",hair:"none",dots:true,short:true},
+  raditz:{type:"h",skin:SKIN,gi:"#141414",pants:"#141414",armor:"saiyan",armorColor:"#d8c39a",armorTrim:"#6a8a3a",gloves:"#efeef2",boots:"#efeef2",hair:"raditz",hairC:"#20242c",scouter:true,tail:true},
+  nappa:{type:"h",skin:SKIN,gi:"#141414",pants:"#141414",armor:"saiyan",armorColor:"#d8c39a",armorTrim:"#3a6bd6",gloves:"#efeef2",boots:"#efeef2",hair:"none",mustache:true,scouter:true,tail:true,big:true},
+  ginyu:{type:"h",skin:"#a06bd0",gi:"#141414",pants:"#141414",armor:"saiyan",armorColor:"#efeef2",armorTrim:"#e07a2a",gloves:"#efeef2",boots:"#efeef2",hair:"none",horns:true,hornColor:"#c39ae0"},
+  frieza:{type:"frieza"}, cell:{type:"cell"}, buu:{type:"buu"}, kidbuu:{type:"buu",kid:true}, saibaman:{type:"saibaman"},
+  chichi:{type:"h",skin:SKIN,gi:"#c0392b",pants:"#7a2d6a",belt:"#ffcf4a",boots:"#4a2d2d",hair:"bun",hairC:"#20242c"},
+  bulma:{type:"h",skin:SKIN,gi:"#e05a9a",pants:"#3a6bd6",boots:"#e05a9a",hair:"bob",hairC:"#33bdbd"},
+  roshi:{type:"h",skin:SKIN,gi:"#e07a2a",pants:"#2b6bd6",boots:"#3a3a3a",hair:"none",beard:true,glasses:true},
+  dende:{type:"h",skin:"#8fce8f",gi:"#d8b84a",belt:"#7a4fd0",boots:"#7a4fd0",antennae:true,hair:"none",short:true},
+  guru:{type:"h",skin:"#9fce9f",gi:"#b03a3a",pants:"#b03a3a",boots:"#5a2d2d",antennae:true,hair:"none",beard:true,beardC:"#eaeaea",big:true},
+  korin:{type:"korin"},
+  default:{type:"h",skin:SKIN,gi:"#8890a0",pants:"#5a6070",boots:"#333",hair:"none"},
+};
+const NAME2SPR={"Chi-Chi":"chichi","Bulma":"bulma","Master Roshi":"roshi","Korin":"korin","Dende":"dende","Elder Guru":"guru"};
+function _rr(c,x,y,w,h,r){ r=Math.min(r,w/2,h/2); c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); c.fill(); }
+function _tri(c,ax,ay,bx,by,cx,cy){ c.beginPath(); c.moveTo(ax,ay); c.lineTo(bx,by); c.lineTo(cx,cy); c.closePath(); c.fill(); }
+function drawChar(ctx,X,Y,s,key){ const sp=SPRITES[key];
+  if(!sp){ if(!drawChar._warned){drawChar._warned={};} if(!drawChar._warned[key]){drawChar._warned[key]=1; console.warn("sprite missing:",key);} }
+  const spec=sp||SPRITES.default;
+  if(spec.type==="h") return drawHuman(ctx,X,Y,s,spec);
+  if(spec.type==="frieza") return drawFrieza(ctx,X,Y,s);
+  if(spec.type==="cell") return drawCell(ctx,X,Y,s);
+  if(spec.type==="buu") return drawBuu(ctx,X,Y,s,spec.kid);
+  if(spec.type==="saibaman") return drawSaibaman(ctx,X,Y,s);
+  if(spec.type==="korin") return drawKorin(ctx,X,Y,s);
+  return drawHuman(ctx,X,Y,s,SPRITES.default);
+}
+function makeSprite(key,size){ const c=document.createElement("canvas"); const dpr=window.devicePixelRatio||1;
+  c.width=Math.round(size*dpr); c.height=Math.round(size*dpr); c.style.width=size+"px"; c.style.height=size+"px";
+  const g=c.getContext("2d"); g.scale(dpr,dpr); drawChar(g,0,0,size,key); return c; }
+function drawHuman(ctx,X,Y,s,sp){
+  const px=f=>X+f*s, py=f=>Y+f*s, u=f=>f*s;
+  ctx.fillStyle="rgba(0,0,0,0.22)"; ctx.beginPath(); ctx.ellipse(px(.5),py(.95),u(.24),u(.05),0,0,7); ctx.fill();
+  if(sp.hair==="raditz"){ ctx.fillStyle=sp.hairC; ctx.beginPath(); ctx.moveTo(px(.5),py(.1)); ctx.quadraticCurveTo(px(.02),py(.5),px(.28),py(.86)); ctx.quadraticCurveTo(px(.5),py(.72),px(.72),py(.86)); ctx.quadraticCurveTo(px(.98),py(.5),px(.5),py(.1)); ctx.fill(); }
+  if(sp.tail){ ctx.strokeStyle=sp.hairC||"#6a4a2a"; ctx.lineWidth=u(.045); ctx.lineCap="round"; ctx.beginPath(); ctx.moveTo(px(.64),py(.64)); ctx.quadraticCurveTo(px(.9),py(.66),px(.85),py(.44)); ctx.stroke(); }
+  if(sp.cape){ ctx.fillStyle=sp.cape; ctx.beginPath(); ctx.moveTo(px(.3),py(.4)); ctx.lineTo(px(.14),py(.82)); ctx.lineTo(px(.86),py(.82)); ctx.lineTo(px(.7),py(.4)); ctx.closePath(); ctx.fill(); ctx.fillStyle="rgba(0,0,0,0.08)"; ctx.fillRect(px(.485),py(.4),u(.03),u(.42)); }
+  ctx.fillStyle=sp.pants||sp.gi; _rr(ctx,px(.35),py(.62),u(.12),u(.24),u(.03)); _rr(ctx,px(.53),py(.62),u(.12),u(.24),u(.03));
+  ctx.fillStyle=sp.boots||"#3a3a3a"; _rr(ctx,px(.33),py(.82),u(.16),u(.12),u(.04)); _rr(ctx,px(.51),py(.82),u(.16),u(.12),u(.04));
+  ctx.fillStyle=sp.gi; _rr(ctx,px(.3),py(.42),u(.4),u(.26),u(.07));
+  if(sp.under){ ctx.fillStyle=sp.under; _tri(ctx,px(.42),py(.42),px(.58),py(.42),px(.5),py(.6)); }
+  if(sp.belt){ ctx.fillStyle=sp.belt; _rr(ctx,px(.3),py(.6),u(.4),u(.055),u(.02)); }
+  ctx.fillStyle=sp.gi; _rr(ctx,px(.2),py(.44),u(.11),u(.19),u(.05)); _rr(ctx,px(.69),py(.44),u(.11),u(.19),u(.05));
+  ctx.fillStyle=sp.gloves||sp.skin; ctx.beginPath(); ctx.arc(px(.255),py(.64),u(.055),0,7); ctx.arc(px(.745),py(.64),u(.055),0,7); ctx.fill();
+  if(sp.armor==="saiyan"){ ctx.fillStyle=sp.armorColor; _rr(ctx,px(.3),py(.42),u(.4),u(.15),u(.06));
+    ctx.fillStyle=sp.armorTrim; _rr(ctx,px(.23),py(.4),u(.15),u(.1),u(.04)); _rr(ctx,px(.62),py(.4),u(.15),u(.1),u(.04));
+    ctx.fillStyle="rgba(0,0,0,0.08)"; _rr(ctx,px(.3),py(.53),u(.4),u(.02),u(.01)); }
+  const HR=sp.big?.21:.19;
+  ctx.fillStyle=sp.skin; ctx.beginPath(); ctx.arc(px(.5),py(.28),u(HR),0,7); ctx.fill();
+  ctx.beginPath(); ctx.arc(px(.5-HR*0.98),py(.29),u(.028),0,7); ctx.arc(px(.5+HR*0.98),py(.29),u(.028),0,7); ctx.fill();
+  if(sp.turban){ ctx.fillStyle=sp.turban; _rr(ctx,px(.31),py(.12),u(.38),u(.11),u(.04)); ctx.fillStyle=sp.turbanTrim; _rr(ctx,px(.31),py(.2),u(.38),u(.03),u(.01)); }
+  const ey=.29;
+  ctx.fillStyle="#fff"; ctx.beginPath(); ctx.ellipse(px(.435),py(ey),u(.033),u(.05),0,0,7); ctx.ellipse(px(.565),py(ey),u(.033),u(.05),0,0,7); ctx.fill();
+  ctx.fillStyle=sp.eye||"#20242c"; ctx.beginPath(); ctx.arc(px(.45),py(ey+.006),u(.02),0,7); ctx.arc(px(.57),py(ey+.006),u(.02),0,7); ctx.fill();
+  if(sp.widow||sp.mustache){ ctx.strokeStyle="#20242c"; ctx.lineWidth=u(.017); ctx.lineCap="round"; ctx.beginPath(); ctx.moveTo(px(.4),py(.235)); ctx.lineTo(px(.47),py(.255)); ctx.moveTo(px(.6),py(.235)); ctx.lineTo(px(.53),py(.255)); ctx.stroke(); }
+  if(sp.mustache){ ctx.fillStyle="#20242c"; _rr(ctx,px(.42),py(.35),u(.16),u(.035),u(.015)); }
+  if(sp.beard){ ctx.fillStyle=sp.beardC||"#f2f2f2"; ctx.beginPath(); ctx.arc(px(.5),py(.35),u(.15),0.08*Math.PI,0.92*Math.PI); ctx.lineTo(px(.5),py(.33)); ctx.closePath(); ctx.fill(); }
+  if(sp.glasses){ ctx.fillStyle="#111"; _rr(ctx,px(.37),py(.26),u(.26),u(.055),u(.02)); }
+  if(sp.dots){ ctx.fillStyle="#8a5230"; [[.44,.15],[.5,.14],[.56,.15],[.46,.19],[.54,.19],[.5,.21]].forEach(d=>{ ctx.beginPath(); ctx.arc(px(d[0]),py(d[1]),u(.011),0,7); ctx.fill(); }); }
+  if(sp.antennae){ ctx.strokeStyle=sp.skin; ctx.lineWidth=u(.022); ctx.lineCap="round"; ctx.beginPath(); ctx.moveTo(px(.45),py(.13)); ctx.lineTo(px(.42),py(.04)); ctx.moveTo(px(.55),py(.13)); ctx.lineTo(px(.58),py(.04)); ctx.stroke(); }
+  if(sp.horns){ ctx.fillStyle=sp.hornColor||"#ddd"; _tri(ctx,px(.4),py(.14),px(.34),py(.02),px(.46),py(.12)); _tri(ctx,px(.6),py(.14),px(.66),py(.02),px(.54),py(.12)); }
+  if(sp.scouter){ ctx.fillStyle="rgba(60,220,120,0.85)"; _rr(ctx,px(.55),py(.25),u(.12),u(.06),u(.02)); ctx.fillStyle="#2a2a2a"; _rr(ctx,px(.64),py(.22),u(.035),u(.12),u(.01)); }
+  drawHair(ctx,px,py,u,sp);
+}
+function drawHair(ctx,px,py,u,sp){ const c=sp.hairC||"#20242c"; ctx.fillStyle=c;
+  switch(sp.hair){
+    case "goku":
+      _tri(ctx,px(.5),py(.3),px(.26),py(.2),px(.36),py(-.04)); _tri(ctx,px(.5),py(.3),px(.36),py(-.04),px(.46),py(-.08));
+      _tri(ctx,px(.5),py(.3),px(.46),py(-.08),px(.54),py(-.08)); _tri(ctx,px(.5),py(.3),px(.54),py(-.08),px(.64),py(-.04));
+      _tri(ctx,px(.5),py(.3),px(.64),py(-.04),px(.74),py(.2)); _tri(ctx,px(.34),py(.24),px(.46),py(.1),px(.44),py(.3)); _tri(ctx,px(.66),py(.24),px(.54),py(.1),px(.56),py(.3)); break;
+    case "gohan":
+      _tri(ctx,px(.5),py(.28),px(.32),py(.18),px(.4),py(0)); _tri(ctx,px(.5),py(.28),px(.4),py(0),px(.5),py(-.03));
+      _tri(ctx,px(.5),py(.28),px(.5),py(-.03),px(.6),py(0)); _tri(ctx,px(.5),py(.28),px(.6),py(0),px(.68),py(.18)); _tri(ctx,px(.42),py(.22),px(.5),py(.06),px(.5),py(.24)); break;
+    case "vegeta":
+      ctx.beginPath(); ctx.moveTo(px(.28),py(.26)); ctx.quadraticCurveTo(px(.34),py(-.08),px(.5),py(-.16)); ctx.quadraticCurveTo(px(.66),py(-.08),px(.72),py(.26)); ctx.quadraticCurveTo(px(.5),py(.12),px(.28),py(.26)); ctx.fill();
+      _tri(ctx,px(.43),py(.14),px(.57),py(.14),px(.5),py(.26)); break;
+    case "raditz":
+      _tri(ctx,px(.5),py(.28),px(.3),py(.16),px(.4),py(-.04)); _tri(ctx,px(.5),py(.28),px(.4),py(-.04),px(.5),py(-.08));
+      _tri(ctx,px(.5),py(.28),px(.5),py(-.08),px(.6),py(-.04)); _tri(ctx,px(.5),py(.28),px(.6),py(-.04),px(.7),py(.16)); break;
+    case "bun":
+      ctx.beginPath(); ctx.arc(px(.5),py(.22),u(.2),Math.PI,2*Math.PI); ctx.fill(); ctx.beginPath(); ctx.arc(px(.5),py(.06),u(.07),0,7); ctx.fill(); break;
+    case "bob":
+      _rr(ctx,px(.27),py(.14),u(.09),u(.26),u(.04)); _rr(ctx,px(.64),py(.14),u(.09),u(.26),u(.04));
+      ctx.beginPath(); ctx.arc(px(.5),py(.24),u(.21),Math.PI*1.0,Math.PI*2.0); ctx.fill(); break;
+    default: break;
+  }
+}
+function drawSaibaman(ctx,X,Y,s){ const px=f=>X+f*s,py=f=>Y+f*s,u=f=>f*s;
+  ctx.fillStyle="rgba(0,0,0,0.22)"; ctx.beginPath(); ctx.ellipse(px(.5),py(.94),u(.22),u(.05),0,0,7); ctx.fill();
+  ctx.fillStyle="#3f7a3a"; _rr(ctx,px(.36),py(.66),u(.1),u(.24),u(.03)); _rr(ctx,px(.54),py(.66),u(.1),u(.24),u(.03));
+  ctx.fillStyle="#5aa84f"; ctx.beginPath(); ctx.ellipse(px(.5),py(.5),u(.24),u(.26),0,0,7); ctx.fill();
+  ctx.strokeStyle="rgba(0,0,0,0.15)"; ctx.lineWidth=u(.02); for(let i=0;i<3;i++){ ctx.beginPath(); ctx.moveTo(px(.34),py(.46+i*.08)); ctx.lineTo(px(.66),py(.46+i*.08)); ctx.stroke(); }
+  ctx.fillStyle="#5aa84f"; _rr(ctx,px(.2),py(.42),u(.1),u(.16),u(.04)); _rr(ctx,px(.7),py(.42),u(.1),u(.16),u(.04));
+  ctx.fillStyle="#fff"; ctx.beginPath(); ctx.ellipse(px(.42),py(.4),u(.06),u(.08),0,0,7); ctx.ellipse(px(.58),py(.4),u(.06),u(.08),0,0,7); ctx.fill();
+  ctx.fillStyle="#111"; ctx.beginPath(); ctx.arc(px(.42),py(.42),u(.03),0,7); ctx.arc(px(.58),py(.42),u(.03),0,7); ctx.fill();
+  ctx.strokeStyle="#3f7a3a"; ctx.lineWidth=u(.025); ctx.beginPath(); ctx.moveTo(px(.5),py(.26)); ctx.lineTo(px(.5),py(.12)); ctx.stroke(); ctx.fillStyle="#cc9944"; ctx.beginPath(); ctx.arc(px(.5),py(.1),u(.03),0,7); ctx.fill();
+  ctx.strokeStyle="#123"; ctx.lineWidth=u(.02); ctx.beginPath(); ctx.moveTo(px(.44),py(.56)); ctx.lineTo(px(.56),py(.56)); ctx.stroke(); }
+function drawFrieza(ctx,X,Y,s){ const px=f=>X+f*s,py=f=>Y+f*s,u=f=>f*s;
+  ctx.fillStyle="rgba(0,0,0,0.22)"; ctx.beginPath(); ctx.ellipse(px(.5),py(.95),u(.24),u(.05),0,0,7); ctx.fill();
+  ctx.strokeStyle="#c58fd0"; ctx.lineWidth=u(.05); ctx.lineCap="round"; ctx.beginPath(); ctx.moveTo(px(.62),py(.7)); ctx.quadraticCurveTo(px(.95),py(.7),px(.9),py(.45)); ctx.stroke();
+  ctx.fillStyle="#eef0f4"; _rr(ctx,px(.36),py(.62),u(.12),u(.26),u(.04)); _rr(ctx,px(.52),py(.62),u(.12),u(.26),u(.04));
+  ctx.fillStyle="#7a4fb0"; _rr(ctx,px(.34),py(.82),u(.16),u(.11),u(.04)); _rr(ctx,px(.5),py(.82),u(.16),u(.11),u(.04));
+  ctx.fillStyle="#eef0f4"; _rr(ctx,px(.3),py(.4),u(.4),u(.28),u(.09));
+  ctx.fillStyle="#7a4fb0"; ctx.beginPath(); ctx.ellipse(px(.5),py(.46),u(.16),u(.1),0,0,7); ctx.fill();
+  ctx.beginPath(); ctx.arc(px(.28),py(.44),u(.09),0,7); ctx.arc(px(.72),py(.44),u(.09),0,7); ctx.fill();
+  ctx.fillStyle="#eef0f4"; _rr(ctx,px(.2),py(.46),u(.1),u(.18),u(.05)); _rr(ctx,px(.7),py(.46),u(.1),u(.18),u(.05));
+  ctx.fillStyle="#eef0f4"; ctx.beginPath(); ctx.arc(px(.5),py(.26),u(.18),0,7); ctx.fill();
+  ctx.fillStyle="#7a4fb0"; ctx.beginPath(); ctx.ellipse(px(.5),py(.14),u(.16),u(.1),0,Math.PI,2*Math.PI); ctx.fill();
+  ctx.beginPath(); ctx.arc(px(.34),py(.27),u(.05),0,7); ctx.arc(px(.66),py(.27),u(.05),0,7); ctx.fill();
+  ctx.fillStyle="#e23"; ctx.beginPath(); ctx.ellipse(px(.43),py(.27),u(.03),u(.045),0,0,7); ctx.ellipse(px(.57),py(.27),u(.03),u(.045),0,0,7); ctx.fill();
+  ctx.fillStyle="#611"; ctx.beginPath(); ctx.arc(px(.43),py(.28),u(.014),0,7); ctx.arc(px(.57),py(.28),u(.014),0,7); ctx.fill();
+  ctx.strokeStyle="#40204a"; ctx.lineWidth=u(.016); ctx.beginPath(); ctx.moveTo(px(.44),py(.35)); ctx.lineTo(px(.56),py(.35)); ctx.stroke(); }
+function drawCell(ctx,X,Y,s){ const px=f=>X+f*s,py=f=>Y+f*s,u=f=>f*s;
+  ctx.fillStyle="rgba(0,0,0,0.22)"; ctx.beginPath(); ctx.ellipse(px(.5),py(.95),u(.24),u(.05),0,0,7); ctx.fill();
+  ctx.fillStyle="rgba(150,220,190,0.4)"; ctx.beginPath(); ctx.ellipse(px(.28),py(.42),u(.12),u(.2),0.5,0,7); ctx.ellipse(px(.72),py(.42),u(.12),u(.2),-0.5,0,7); ctx.fill();
+  ctx.fillStyle="#4f9a5a"; _rr(ctx,px(.35),py(.62),u(.12),u(.26),u(.04)); _rr(ctx,px(.53),py(.62),u(.12),u(.26),u(.04));
+  ctx.fillStyle="#1f2a1f"; [[.4,.72],[.58,.76],[.42,.84]].forEach(d=>{ctx.beginPath();ctx.arc(px(d[0]),py(d[1]),u(.02),0,7);ctx.fill();});
+  ctx.fillStyle="#5aa864"; _rr(ctx,px(.29),py(.4),u(.42),u(.26),u(.08));
+  ctx.fillStyle="#e88fb0"; ctx.beginPath(); ctx.ellipse(px(.5),py(.47),u(.15),u(.09),0,0,7); ctx.fill();
+  ctx.fillStyle="#1f2a1f"; [[.36,.44],[.64,.44],[.35,.6],[.65,.6]].forEach(d=>{ctx.beginPath();ctx.arc(px(d[0]),py(d[1]),u(.022),0,7);ctx.fill();});
+  ctx.fillStyle="#5aa864"; _rr(ctx,px(.19),py(.44),u(.1),u(.18),u(.05)); _rr(ctx,px(.71),py(.44),u(.1),u(.18),u(.05));
+  ctx.fillStyle="#5aa864"; ctx.beginPath(); ctx.arc(px(.5),py(.26),u(.17),0,7); ctx.fill();
+  ctx.fillStyle="#2f5a3a"; _tri(ctx,px(.42),py(.12),px(.36),py(-.06),px(.48),py(.1)); _tri(ctx,px(.58),py(.12),px(.64),py(-.06),px(.52),py(.1));
+  ctx.fillStyle="#e88fb0"; _rr(ctx,px(.42),py(.24),u(.16),u(.08),u(.03));
+  ctx.fillStyle="#fff"; ctx.beginPath(); ctx.ellipse(px(.44),py(.25),u(.028),u(.04),0,0,7); ctx.ellipse(px(.56),py(.25),u(.028),u(.04),0,0,7); ctx.fill();
+  ctx.fillStyle="#191"; ctx.beginPath(); ctx.arc(px(.45),py(.26),u(.016),0,7); ctx.arc(px(.57),py(.26),u(.016),0,7); ctx.fill(); }
+function drawBuu(ctx,X,Y,s,kid){ const px=f=>X+f*s,py=f=>Y+f*s,u=f=>f*s; const skin="#f2a0c8";
+  ctx.fillStyle="rgba(0,0,0,0.22)"; ctx.beginPath(); ctx.ellipse(px(.5),py(.95),u(.24),u(.05),0,0,7); ctx.fill();
+  if(!kid){
+    ctx.fillStyle="#7a4fb0"; ctx.beginPath(); ctx.moveTo(px(.28),py(.4)); ctx.lineTo(px(.16),py(.82)); ctx.lineTo(px(.84),py(.82)); ctx.lineTo(px(.72),py(.4)); ctx.closePath(); ctx.fill();
+    ctx.fillStyle="#efe8dc"; _rr(ctx,px(.32),py(.6),u(.36),u(.3),u(.08));
+    ctx.fillStyle="#222"; _rr(ctx,px(.32),py(.58),u(.36),u(.06),u(.02)); ctx.fillStyle="#ffcf4a"; _rr(ctx,px(.46),py(.575),u(.08),u(.07),u(.02));
+    ctx.fillStyle=skin; _rr(ctx,px(.28),py(.36),u(.44),u(.26),u(.1));
+    ctx.fillStyle="#e8d08a"; _rr(ctx,px(.3),py(.36),u(.4),u(.12),u(.05));
+    ctx.fillStyle=skin; _rr(ctx,px(.18),py(.4),u(.12),u(.2),u(.06)); _rr(ctx,px(.7),py(.4),u(.12),u(.2),u(.06));
+    ctx.fillStyle="#c47a9a"; ctx.beginPath(); ctx.arc(px(.24),py(.5),u(.02),0,7); ctx.arc(px(.76),py(.5),u(.02),0,7); ctx.fill();
+    ctx.fillStyle=skin; ctx.beginPath(); ctx.arc(px(.5),py(.26),u(.19),0,7); ctx.fill();
+    ctx.strokeStyle=skin; ctx.lineWidth=u(.05); ctx.lineCap="round"; ctx.beginPath(); ctx.moveTo(px(.5),py(.1)); ctx.quadraticCurveTo(px(.68),py(.0),px(.6),py(.14)); ctx.stroke();
+    ctx.fillStyle="#222"; ctx.beginPath(); ctx.ellipse(px(.44),py(.26),u(.02),u(.05),0,0,7); ctx.ellipse(px(.56),py(.26),u(.02),u(.05),0,0,7); ctx.fill();
+    ctx.strokeStyle="#a03a5a"; ctx.lineWidth=u(.02); ctx.beginPath(); ctx.arc(px(.5),py(.31),u(.05),0.1*Math.PI,0.9*Math.PI); ctx.stroke();
+  } else {
+    ctx.fillStyle="#efe8dc"; _rr(ctx,px(.36),py(.6),u(.28),u(.3),u(.07)); ctx.fillStyle="#222"; _rr(ctx,px(.36),py(.58),u(.28),u(.05),u(.02));
+    ctx.fillStyle=skin; _rr(ctx,px(.36),py(.36),u(.28),u(.26),u(.09));
+    ctx.fillStyle=skin; _rr(ctx,px(.24),py(.4),u(.1),u(.2),u(.05)); _rr(ctx,px(.66),py(.4),u(.1),u(.2),u(.05));
+    ctx.fillStyle=skin; ctx.beginPath(); ctx.arc(px(.5),py(.26),u(.16),0,7); ctx.fill();
+    ctx.strokeStyle=skin; ctx.lineWidth=u(.045); ctx.lineCap="round"; ctx.beginPath(); ctx.moveTo(px(.5),py(.12)); ctx.lineTo(px(.57),py(.0)); ctx.stroke();
+    ctx.fillStyle="#fff"; ctx.beginPath(); ctx.ellipse(px(.44),py(.26),u(.03),u(.04),0,0,7); ctx.ellipse(px(.56),py(.26),u(.03),u(.04),0,0,7); ctx.fill();
+    ctx.fillStyle="#c00"; ctx.beginPath(); ctx.arc(px(.45),py(.27),u(.015),0,7); ctx.arc(px(.55),py(.27),u(.015),0,7); ctx.fill();
+    ctx.strokeStyle="#a03a5a"; ctx.lineWidth=u(.02); ctx.beginPath(); ctx.moveTo(px(.4),py(.2)); ctx.lineTo(px(.47),py(.24)); ctx.moveTo(px(.6),py(.2)); ctx.lineTo(px(.53),py(.24)); ctx.stroke();
+  } }
+function drawKorin(ctx,X,Y,s){ const px=f=>X+f*s,py=f=>Y+f*s,u=f=>f*s;
+  ctx.fillStyle="rgba(0,0,0,0.22)"; ctx.beginPath(); ctx.ellipse(px(.5),py(.94),u(.2),u(.05),0,0,7); ctx.fill();
+  ctx.strokeStyle="#a5744a"; ctx.lineWidth=u(.03); ctx.beginPath(); ctx.moveTo(px(.72),py(.1)); ctx.lineTo(px(.72),py(.92)); ctx.stroke();
+  ctx.fillStyle="#f4f4f4"; _rr(ctx,px(.34),py(.5),u(.3),u(.38),u(.12));
+  _rr(ctx,px(.26),py(.54),u(.1),u(.18),u(.05)); _rr(ctx,px(.6),py(.54),u(.1),u(.18),u(.05));
+  ctx.beginPath(); ctx.arc(px(.5),py(.4),u(.16),0,7); ctx.fill();
+  _tri(ctx,px(.4),py(.3),px(.36),py(.16),px(.48),py(.28)); _tri(ctx,px(.6),py(.3),px(.64),py(.16),px(.52),py(.28));
+  ctx.strokeStyle="#333"; ctx.lineWidth=u(.015); ctx.beginPath(); ctx.arc(px(.44),py(.4),u(.03),0,Math.PI); ctx.arc(px(.56),py(.4),u(.03),0,Math.PI); ctx.stroke();
+  ctx.fillStyle="#e05a8a"; ctx.beginPath(); ctx.arc(px(.5),py(.45),u(.014),0,7); ctx.fill();
+  ctx.strokeStyle="#bbb"; ctx.lineWidth=u(.007); [[.36,.44,.46,.45],[.36,.47,.46,.47],[.64,.44,.54,.45],[.64,.47,.54,.47]].forEach(w=>{ctx.beginPath();ctx.moveTo(px(w[0]),py(w[1]));ctx.lineTo(px(w[2]),py(w[3]));ctx.stroke();}); }
 
 /* =====================================================================
    AUDIO — procedural Web Audio. Applying Brain lessons:
@@ -563,9 +787,9 @@ function loadMap(id, sx, sy){
   const m=MAPS[id]; S.map=m; S.mapId=id;
   OW.ents=[];
   // NPCs
-  (m.npcs||[]).forEach(n=>OW.ents.push({type:"npc",...n}));
+  (m.npcs||[]).forEach(n=>OW.ents.push({type:"npc",...n, spr:NAME2SPR[n.name]||"default"}));
   // roaming (stationary) trash enemies — skip cleared ones
-  (m.enemies||[]).forEach((e,i)=>{ const key=id+":e"+i; if(!S.cleared.has(key)) OW.ents.push({type:"enemy",key,...e,av:ENEMIES[e.eid].av}); });
+  (m.enemies||[]).forEach((e,i)=>{ const key=id+":e"+i; if(!S.cleared.has(key)) OW.ents.push({type:"enemy",key,...e,av:ENEMIES[e.eid].av,spr:e.eid}); });
   // boss NPCs present according to story state
   addBoss(m.boss); addBoss(m.boss2); addBoss(m.boss3);
   // final bosses appear once Cell (idx5) cleared
@@ -579,7 +803,7 @@ function loadMap(id, sx, sy){
 }
 function addBoss(b){ if(!b) return;
   if(b.storyIdx < S.storyIdx) return;          // already defeated → not present
-  OW.ents.push({type:"boss",...b, active:(b.storyIdx===S.storyIdx)}); // only current one is fightable
+  OW.ents.push({type:"boss",...b, spr:STORY[b.storyIdx], active:(b.storyIdx===S.storyIdx)}); // only current one is fightable
 }
 
 /* ---------- render ---------- */
@@ -626,14 +850,14 @@ function drawOW(){
     const px=e.x*TILE, py=e.y*TILE + Math.sin(OW.bob+e.x)*2;
     if(e.type==="boss"){ ctx.fillStyle="rgba(255,77,94,.25)"; ctx.beginPath(); ctx.arc(px+TILE/2,py+TILE/2,TILE*0.6,0,7); ctx.fill(); }
     if(e.type==="npc"){ ctx.fillStyle="rgba(79,195,255,.18)"; ctx.beginPath(); ctx.arc(px+TILE/2,py+TILE*0.7,TILE*0.4,0,7); ctx.fill(); }
-    emoji(ctx,e.av,px,py,1);
+    drawChar(ctx,px,py,TILE,e.spr||"default");
     if(e.type==="boss"&&e.active){ emoji(ctx,"❗",px+TILE*0.5,py-TILE*0.5,0.6); }
   }
   // player (with tiny aura of leader)
   const leader=S.heroes[0];
   ctx.fillStyle=(leader?leader.au:"#ffcf6b"); ctx.globalAlpha=0.25;
   ctx.beginPath(); ctx.arc(OW.px+TILE/2,OW.py+TILE*0.7,TILE*0.5,0,7); ctx.fill(); ctx.globalAlpha=1;
-  emoji(ctx, leader?leader.av:"🥋", OW.px, OW.py+Math.sin(OW.bob)*1.5, 1);
+  drawChar(ctx, OW.px, OW.py+Math.sin(OW.bob)*1.5, TILE, leader?leader.fid:"goku");
   // facing marker
   ctx.restore();
 }
@@ -758,8 +982,8 @@ function mkBattleUnit(src,side,id,eid){
     maxHp:src.maxHp||src.hp, hp:src.hp!=null?src.hp:src.hp, maxKi:src.maxKi||src.ki, ki:src.ki,
     atk:src.atk,def:src.def,spd:src.spd,pl:src.pl!=null?src.pl:src.pl,
     form:null,formMult:1,formSpd:1,debuff:0,charged:null,guarding:false,dead:false,eid,hero:(side==="ally"?src:null)};
-  if(side==="ally"){ u.maxHp=src.maxHp; u.hp=src.hp; u.maxKi=src.maxKi; u.ki=src.ki; u.pl=src.pl; u.fid=src.fid; }
-  else { u.maxHp=src.hp; u.hp=src.hp; u.maxKi=src.ki; u.ki=src.ki; u.pl=src.pl; }
+  if(side==="ally"){ u.maxHp=src.maxHp; u.hp=src.hp; u.maxKi=src.maxKi; u.ki=src.ki; u.pl=src.pl; u.fid=src.fid; u.spr=src.fid; }
+  else { u.maxHp=src.hp; u.hp=src.hp; u.maxKi=src.ki; u.ki=src.ki; u.pl=src.pl; u.spr=eid; }
   return u;
 }
 function livingAllies(){ return B.units.filter(u=>u.side==="ally"&&!u.dead); }
@@ -783,10 +1007,11 @@ function buildOrder(){ const live=B.units.filter(u=>!u.dead);
 /* render + fx (battle DOM) */
 function renderUnits(){ const er=$("#rowEnemies"),ar=$("#rowAllies"); er.innerHTML="";ar.innerHTML="";
   for(const u of B.units){ const host=u.side==="enemy"?er:ar; const node=el("div","unit"+(u.dead?" dead":""));
-    node.innerHTML=`<div class="avatar">${u.av}<div class="aura"></div></div>
+    node.innerHTML=`<div class="avatar"><canvas class="spr" width="120" height="120"></canvas><div class="aura"></div></div>
       <div class="nameplate"><div class="n"><span>${u.name}</span><span class="form"></span></div>
       <div class="bar h"><i></i></div><div class="bar k"><i></i></div><div class="pl">PL ${fmtPower(u.pl)}</div></div>`;
     host.appendChild(node); u.el=node; u.avatarEl=node.querySelector(".avatar");
+    const _sc=node.querySelector(".spr"); if(_sc) drawChar(_sc.getContext("2d"),0,0,120,u.spr);
     u.avatarEl.querySelector(".aura").style.setProperty("--au",u.au); updateBars(u); } }
 function updateBars(u){ if(!u.el)return;
   u.el.querySelector(".bar.h>i").style.width=Math.max(0,100*u.hp/u.maxHp)+"%";
@@ -856,9 +1081,34 @@ function pickTarget(t){ if(!B.awaiting||!B.awaiting.startsWith("target"))return;
   doAttack(u,t,mid,m).then(()=>endPlayerAction(u)); }
 function endPlayerAction(u){ B.awaiting=null; $("#hud").classList.remove("show"); setTimeout(()=>advanceTurn(),240); }
 
-async function doAttack(u,t,mid,m){ if(m.ki)u.ki-=m.ki; actFx(u); updateBars(u); if(m.sfx)AUDIO.sfx(m.sfx);
-  if(m.slow) logB(`<b>${u.name}</b> charges <span class="k">${m.name}</span>...`);
-  await wait(m.slow?420:180); if(m.beam){ beamFx(u,t,m.beam); await wait(200); }
+function isKi(m){ return m.sfx==="ki"; }
+function drawCS(canvas,key){ const g=canvas.getContext("2d"); g.setTransform(1,0,0,1,0,0); g.clearRect(0,0,canvas.width,canvas.height); drawChar(g,0,0,canvas.width,key); }
+let CS_on=true;
+function playKiCutscene(attacker,target,move){
+  return new Promise(resolve=>{
+    if(!CS_on){ if(move.beam) beamFx(attacker,target,move.beam); AUDIO.sfx("ki"); return setTimeout(resolve,260); }
+    const cs=$("#cutscene"), col=move.beam||"#7fe0ff";
+    cs.style.setProperty("--csc",col);
+    drawCS($("#csAtk"),attacker.spr||"default"); drawCS($("#csTgt"),target.spr||"default");
+    $("#csName").textContent=move.name;
+    const parts=[$("#csName"),$("#csAura"),$("#csCharge"),$("#csBeam"),$("#csFlash"),$("#csTgtW"),$("#csAtkW")];
+    parts.forEach(e=>{ e.classList.remove("show","go","fire","flinch"); void e.offsetWidth; });
+    cs.style.display="block";
+    $("#csName").classList.add("show"); $("#csAura").style.opacity=""; $("#csCharge").classList.add("go");
+    AUDIO.sfx("ki");
+    const timers=[]; let done=false;
+    const finish=()=>{ if(done)return; done=true; timers.forEach(clearTimeout); cs.style.display="none";
+      cs.onclick=null; document.removeEventListener("keydown",onKey,true); resolve(); };
+    const onKey=e=>{ e.preventDefault(); e.stopPropagation(); finish(); };
+    cs.onclick=finish; document.addEventListener("keydown",onKey,true);
+    timers.push(setTimeout(()=>{ $("#csBeam").classList.add("fire"); $("#csTgtW").classList.add("flinch");
+      $("#csFlash").classList.add("go"); shake(); AUDIO.sfx("hit"); },620));
+    timers.push(setTimeout(finish,1240));
+  });
+}
+async function doAttack(u,t,mid,m){ if(m.ki)u.ki-=m.ki; actFx(u); updateBars(u);
+  if(isKi(m)){ if(m.slow) logB(`<b>${u.name}</b> charges <span class="k">${m.name}</span>...`); await playKiCutscene(u,t,m); }
+  else { if(m.sfx)AUDIO.sfx(m.sfx); await wait(180); }
   const r=computeDamage(u,t,m);
   if(r.miss){ floatText(t,"MISS","miss"); logB(`${u.name}'s ${m.name} <span class="r">missed!</span>`); return; }
   applyDamage(t,r.dmg); hitFx(t); shake(); whiteFlash(m.slow?.5:.25); AUDIO.sfx("hit");
@@ -892,7 +1142,8 @@ async function enemyAct(e){ $("#hud").classList.add("show"); $("#actions").inner
   await execEnemyMove(e,mv); afterEnemy(e); }
 async function execEnemyMove(e,mv){ const targets=mv.aoe?livingAllies():[pickEnemyTarget()];
   if(!targets.length||!targets[0]){ return; } // no-target guard (dbz-combat#E3)
-  if(mv.beam){ for(const t of targets)beamFx(e,t,mv.beam); await wait(200); } AUDIO.sfx("ki");
+  if(mv.beam){ await playKiCutscene(e,targets[0],{name:mv.name,beam:mv.beam}); }
+  else AUDIO.sfx("hit");
   for(const t of targets){ const r=computeDamage(e,t,{rate:mv.rate||1.4,pierce:mv.pierce||0});
     if(r.miss){ floatText(t,"MISS","miss"); logB(`${e.name}'s ${mv.name} missed ${t.name}.`); continue; }
     let dmg=r.dmg; if(t.guarding)dmg=Math.floor(dmg*0.4); applyDamage(t,dmg); hitFx(t); shake(); whiteFlash(mv.aoe?.6:.3); AUDIO.sfx("hit");
@@ -948,8 +1199,9 @@ function enterWorld(){
 /* roster */
 function buildRoster(){ const box=$("#pick"); box.innerHTML="";
   Object.entries(FIGHTERS).forEach(([id,f])=>{ const c=el("div","hero");
-    c.innerHTML=`<div class="av">${f.av}</div><div class="nm">${f.name}</div><div class="role">${f.role}</div>
+    c.innerHTML=`<div class="av"></div><div class="nm">${f.name}</div><div class="role">${f.role}</div>
       <div class="st">HP ${f.hp} · Ki ${f.ki}<br>ATK ${f.atk} · DEF ${f.def} · SPD ${f.spd}<br><span style="color:var(--dim)">${f.bio}</span></div>`;
+    c.querySelector(".av").appendChild(makeSprite(id,72));
     c.onclick=()=>{ AUDIO.sfx("menu"); togglePick(id,c); }; box.appendChild(c); }); }
 function togglePick(id,c){ const i=S.party.indexOf(id);
   if(i>=0){ S.party.splice(i,1); c.classList.remove("on"); }

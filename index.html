@@ -167,8 +167,17 @@
   .cs-fighter{position:relative;filter:drop-shadow(0 12px 26px rgba(0,0,0,.6))}
   .cs-fighter canvas{width:min(40vw,230px);height:auto;display:block}
   .cs-fighter.atk{animation:csAtkIn .45s cubic-bezier(.2,1.2,.3,1)}
+  .cs-fighter.atk.lunge{animation:csLunge .5s ease-in}
+  @keyframes csLunge{0%{transform:none}45%{transform:translateX(66%) scale(1.08)}66%{transform:translateX(56%) scale(1.05)}100%{transform:none}}
+  .cs-impact{position:absolute;top:50%;left:66%;transform:translate(-50%,-50%) scale(0);z-index:3;
+    font-size:clamp(60px,16vw,110px);opacity:0;filter:drop-shadow(0 0 22px var(--csc,#ffd24a))}
+  .cs-impact.go{animation:csImpact .55s ease-out}
+  @keyframes csImpact{0%{transform:translate(-50%,-50%) scale(.2) rotate(-15deg);opacity:0}
+    30%{transform:translate(-50%,-50%) scale(1.35) rotate(0);opacity:1}100%{transform:translate(-50%,-50%) scale(1.7) rotate(10deg);opacity:0}}
   .cs-fighter.tgt{transform:scaleX(-1);animation:csTgtIn .45s ease}
   .cs-fighter.tgt.flinch{animation:csFlinch .42s ease}
+  .cs-fighter.tgt.flinch.hard{animation:csFlinchHard .42s ease}
+  @keyframes csFlinchHard{0%,100%{transform:scaleX(-1)}25%{transform:scaleX(-1) translate(30px,-10px) rotate(7deg)}55%{transform:scaleX(-1) translate(-16px,6px) rotate(-3deg)}}
   @keyframes csAtkIn{from{transform:translateX(-45%) scale(.7);opacity:0}to{transform:none;opacity:1}}
   @keyframes csTgtIn{from{transform:scaleX(-1) translateX(-45%);opacity:0}to{transform:scaleX(-1);opacity:1}}
   @keyframes csFlinch{0%,100%{transform:scaleX(-1)}30%{transform:scaleX(-1) translate(16px,-7px) rotate(3deg)}65%{transform:scaleX(-1) translate(-9px,4px)}}
@@ -325,6 +334,7 @@
       <div class="cs-beam" id="csBeam"></div>
       <div class="cs-fighter tgt" id="csTgtW"><canvas id="csTgt" width="230" height="230"></canvas></div>
     </div>
+    <div class="cs-impact" id="csImpact">💥</div>
     <div class="cs-charge" id="csCharge"></div>
     <div class="cs-flash" id="csFlash"></div>
     <div class="cs-skip">tap / any key to skip</div>
@@ -1414,23 +1424,32 @@ let CS_on=true;
 // Cinematic cut-in — reserved for CRITICAL HITS (rare & dramatic).
 function playAttackCutscene(attacker,target,move,crit){
   return new Promise(resolve=>{
+    const physical=!move.beam;                       // no beam → melee rush; beam → ki blast
     if(!CS_on){ AUDIO.sfx("hit"); return setTimeout(resolve,120); }
     const cs=$("#cutscene"), col=crit?"#ffd24a":(move.beam||"#7fe0ff");
     cs.style.setProperty("--csc",col);
     drawCS($("#csAtk"),attacker.spr||"default"); drawCS($("#csTgt"),target.spr||"default");
     $("#csName").innerHTML=(crit?'<div class="cs-crit">✦ CRITICAL HIT ✦</div>':'')+(move.name||"Strike");
-    const parts=[$("#csName"),$("#csAura"),$("#csCharge"),$("#csBeam"),$("#csFlash"),$("#csTgtW"),$("#csAtkW")];
-    parts.forEach(e=>{ e.classList.remove("show","go","fire","flinch"); void e.offsetWidth; });
+    const parts=[$("#csName"),$("#csAura"),$("#csCharge"),$("#csBeam"),$("#csFlash"),$("#csTgtW"),$("#csAtkW"),$("#csImpact")];
+    parts.forEach(e=>{ e.classList.remove("show","go","fire","flinch","hard","lunge"); void e.offsetWidth; });
     cs.style.display="block";
-    $("#csName").classList.add("show"); $("#csCharge").classList.add("go");
-    AUDIO.sfx(move.beam?"ki":"transform");
+    $("#csName").classList.add("show");
+    if(physical){ AUDIO.sfx("hit"); }               // melee: no charge ball, no beam
+    else { $("#csCharge").classList.add("go"); AUDIO.sfx("ki"); }
     const timers=[]; let done=false;
     const finish=()=>{ if(done)return; done=true; timers.forEach(clearTimeout); cs.style.display="none";
       cs.onclick=null; document.removeEventListener("keydown",onKey,true); resolve(); };
     const onKey=e=>{ e.preventDefault(); e.stopPropagation(); finish(); };
     cs.onclick=finish; document.addEventListener("keydown",onKey,true);
-    timers.push(setTimeout(()=>{ $("#csBeam").classList.add("fire"); $("#csTgtW").classList.add("flinch");
-      $("#csFlash").classList.add("go"); shake(); AUDIO.sfx("hit"); },600));
+    if(physical){
+      timers.push(setTimeout(()=>{ $("#csAtkW").classList.add("lunge"); },140));
+      timers.push(setTimeout(()=>{ $("#csImpact").classList.add("go"); $("#csTgtW").classList.add("flinch","hard");
+        $("#csFlash").classList.add("go"); shake(); AUDIO.sfx("hit"); },560));
+      timers.push(setTimeout(()=>{ AUDIO.sfx("hit"); shake(); },720));  // combo second hit
+    } else {
+      timers.push(setTimeout(()=>{ $("#csBeam").classList.add("fire"); $("#csTgtW").classList.add("flinch");
+        $("#csFlash").classList.add("go"); shake(); AUDIO.sfx("hit"); },600));
+    }
     timers.push(setTimeout(finish,1200));
   });
 }
@@ -1476,7 +1495,7 @@ async function execEnemyMove(e,mv){ const targets=mv.aoe?livingAllies():[pickEne
   let firstCrit=true;
   for(const t of targets){ const r=computeDamage(e,t,{rate:mv.rate||1.4,pierce:mv.pierce||0});
     if(r.miss){ floatText(t,"MISS","miss"); logB(`${e.name}'s ${mv.name} missed ${t.name}.`); continue; }
-    if(r.crit&&firstCrit){ firstCrit=false; await playAttackCutscene(e,t,{name:mv.name,beam:mv.beam||"#ff5a4a"},true); }
+    if(r.crit&&firstCrit){ firstCrit=false; await playAttackCutscene(e,t,{name:mv.name,beam:mv.beam},true); }
     let dmg=r.dmg; if(t.guarding)dmg=Math.floor(dmg*0.4); applyDamage(t,dmg); hitFx(t); shake(); whiteFlash(r.crit?.6:(mv.aoe?.5:.3)); AUDIO.sfx("hit");
     floatText(t,dmg,r.crit?"crit":"dmg"); logB(`<span class="r">${e.name}</span> uses <b>${mv.name}</b> on <b>${t.name}</b> — <span class="r">${dmg}</span>${r.crit?" <span class='g'>CRIT!</span>":""}${t.guarding?" <span class='k'>(guarded)</span>":""}`);
     if(t.hp<=0) await faint(t); } }

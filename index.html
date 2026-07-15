@@ -191,6 +191,7 @@
   .cs-flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
   .cs-flash.go{animation:csFlash .5s ease-out}
   @keyframes csFlash{0%{opacity:0}12%{opacity:.92}100%{opacity:0}}
+  .cs-crit{font-size:.46em;letter-spacing:4px;color:#ffd24a;-webkit-text-fill-color:#ffd24a;margin-bottom:2px}
   .cs-skip{position:absolute;bottom:10px;right:14px;color:#8fa2c9;font-size:12px;z-index:3;opacity:.8}
   @media(max-width:520px){.actions .btn{font-size:12px}.hero{width:132px}}
 </style>
@@ -670,7 +671,23 @@ const STORY=["raditz","nappa","vegeta_s","ginyu","frieza","cell","buu","kidbuu"]
 /* =====================================================================
    PERSISTENT PARTY (carries HP/ki across the world)
    ===================================================================== */
-const S={ party:[], heroes:[], storyIdx:0, map:null, mapId:null, over:false, cleared:new Set() };
+const S={ party:[], heroes:[], storyIdx:0, map:null, mapId:null, over:false, cleared:new Set(), recruited:new Set() };
+const PARTY_MAX=3;
+function recruitMember(fid){
+  if(S.recruited.has(fid) || S.heroes.some(h=>h.fid===fid)) return false;
+  S.recruited.add(fid);
+  const h=makeHero(fid);
+  if(S.heroes.length>=PARTY_MAX){
+    // bump the rotating support slot — never Goku, avoid Gohan while a support exists
+    let idx=S.heroes.findIndex(x=>x.fid!=="goku"&&x.fid!=="gohan");
+    if(idx<0) idx=S.heroes.findIndex(x=>x.fid!=="goku");
+    if(idx>=0) S.heroes.splice(idx,1);
+  }
+  S.heroes.push(h);
+  S.party=S.heroes.map(x=>x.fid);
+  drawPartyStrip();
+  return true;
+}
 function levelOf(){ return 1 + (S.storyIdx>=3?1:0) + (S.storyIdx>=5?2:0) + (S.storyIdx>=7?2:0); }
 function makeHero(fid){
   const f=FIGHTERS[fid]; const lv=levelOf(); const g=1+0.16*(lv-1);
@@ -717,6 +734,10 @@ const MAPS={
       {x:12,y:8,av:"🐢",name:"Master Roshi",lines:["Remember the basics: Ki runs out. Don't spam your biggest blast.","Each attack has a purpose — pierce, burst, control. Use the right one."]},
     ],
     enemies:[{x:6,y:4,eid:"saibaman"}],
+    recruits:[
+      {x:4,y:3,fid:"gohan",intro:["Dad! I want to help fight too!","...Alright, Gohan. Stay close to me."]},
+      {x:13,y:6,fid:"piccolo",intro:["The Saiyans threaten my world too, Goku.","A temporary alliance, then — I'll fight beside you."]},
+    ],
     boss:{x:16,y:4,storyIdx:0,name:"Raditz",av:"👹",intro:["So this is Earth... and you must be Kakarot's friends.","Prepare yourselves!"]},
     exits:[{x:17,y:4,to:"wasteland",tx:1,ty:4}],
     start:{x:2,y:4},
@@ -740,6 +761,9 @@ const MAPS={
       {x:4,y:6,av:"🐱",name:"Korin",heal:true,lines:["Take a Senzu Bean — you'll be good as new.","Come back any time your ki runs low."]},
     ],
     enemies:[{x:7,y:3,eid:"saibaman"},{x:11,y:7,eid:"saibaman"}],
+    recruits:[
+      {x:6,y:4,fid:"krillin",intro:["Goku! You didn't think I'd let you have all the fun?","Ha! Good to have you, Krillin."]},
+    ],
     boss:{x:9,y:4,storyIdx:1,name:"Nappa",av:"👺",intro:["Hah! You're all bugs to me.","Let's see if you can even scratch me!"]},
     boss2:{x:14,y:2,storyIdx:2,name:"Vegeta",av:"🦍",intro:["Impressive. But I am the Prince of all Saiyans.","This is where you die."]},
     exits:[{x:0,y:1,to:"paozu",tx:16,ty:4},{x:0,y:4,to:"paozu",tx:16,ty:4},{x:17,y:8,to:"namek",tx:1,ty:5}],
@@ -790,6 +814,9 @@ function loadMap(id, sx, sy){
   (m.npcs||[]).forEach(n=>OW.ents.push({type:"npc",...n, spr:NAME2SPR[n.name]||"default"}));
   // roaming (stationary) trash enemies — skip cleared ones
   (m.enemies||[]).forEach((e,i)=>{ const key=id+":e"+i; if(!S.cleared.has(key)) OW.ents.push({type:"enemy",key,...e,av:ENEMIES[e.eid].av,spr:e.eid}); });
+  // recruitable allies found on the map (skip once recruited, gate by story)
+  (m.recruits||[]).forEach(r=>{ if(!S.recruited.has(r.fid) && (r.storyMin==null||S.storyIdx>=r.storyMin))
+    OW.ents.push({type:"recruit",...r,av:FIGHTERS[r.fid].av,spr:r.fid}); });
   // boss NPCs present according to story state
   addBoss(m.boss); addBoss(m.boss2); addBoss(m.boss3);
   // final bosses appear once Cell (idx5) cleared
@@ -915,6 +942,10 @@ function interactEntity(ent){
   } else if(ent.type==="enemy"){
     AUDIO.sfx("talk");
     openDialogue(ent.av,ENEMIES[ent.eid].name,["A "+ENEMIES[ent.eid].name+" attacks!"],()=>startEncounter([ent.eid],()=>{ ent.gone=true; if(ent.key)S.cleared.add(ent.key); }));
+  } else if(ent.type==="recruit"){
+    AUDIO.sfx("talk");
+    openDialogue(ent.av,FIGHTERS[ent.fid].name,ent.intro||["Let me join you!"],()=>{
+      if(recruitMember(ent.fid)){ ent.gone=true; AUDIO.sfx("win"); toast(FIGHTERS[ent.fid].name+" joined the party!"); } });
   } else if(ent.type==="boss"){
     if(!ent.active){ openDialogue(ent.av,ent.name,["...you're not ready to face me yet.","Grow stronger first."]); return; }
     AUDIO.sfx("talk");
@@ -934,8 +965,9 @@ function advanceStory(bossEnt){
   // mark the current boss active
   OW.ents.forEach(e=>{ if(e.type==="boss") e.active=(e.storyIdx===S.storyIdx); });
   if(S.storyIdx>=STORY.length){ winGame(); return; }
-  drawPartyStrip();
-  toast(bossEnt.name+" defeated!");
+  // story recruit: Vegeta joins automatically once Frieza (idx 4) is beaten
+  if(S.storyIdx===5 && !S.recruited.has("vegeta")){ recruitMember("vegeta"); drawPartyStrip(); toast("Frieza falls — Vegeta joins your side!"); }
+  else { drawPartyStrip(); toast(bossEnt.name+" defeated!"); }
 }
 
 /* ---------- dialogue ---------- */
@@ -1071,7 +1103,14 @@ function chooseMove(u,mid,m){ if(B.awaiting!=="action")return; AUDIO.sfx("menu")
   if(m.kind==="xform"){ toggleForm(u,mid); return endPlayerAction(u); }
   if(m.kind==="guard"){ doGuard(u); return endPlayerAction(u); }
   if(m.kind==="heal"&&m.self){ doHeal(u,u,m); return endPlayerAction(u); }
-  if(m.kind==="item"){ B.pending={mid,m}; B.awaiting="target-ally"; $("#prompt").textContent="Toss the Senzu to which ally? (tap a fighter)"; enableTargets("ally"); return; }
+  if(m.kind==="item"){ const allies=livingAllies();
+    if(allies.length<=1){ const a=allies[0]; if(a){ doSenzu(u,a); } return endPlayerAction(u); }
+    B.pending={mid,m}; B.awaiting="target-ally"; $("#prompt").textContent="Toss the Senzu to which ally? (tap a fighter)"; enableTargets("ally"); return; }
+  // enemy-targeted (attack / debuff): auto-target when only one foe is left
+  const foes=livingEnemies();
+  if(foes.length<=1){ const t=foes[0]; if(!t) return endPlayerAction(u);
+    if(m.kind==="debuff"){ doDebuff(u,t,m); return endPlayerAction(u); }
+    return doAttack(u,t,mid,m).then(()=>endPlayerAction(u)); }
   B.pending={mid,m}; B.awaiting="target-enemy"; $("#prompt").textContent=`${m.name} — choose a target (tap a foe)`; enableTargets("enemy"); }
 function enableTargets(side){ B.units.forEach(u=>{ if(u.side===side&&!u.dead){ u.el.style.cursor="crosshair"; u.el.classList.add("foeglow"); u.el.onclick=()=>pickTarget(u); } }); }
 function clearTargets(){ B.units.forEach(u=>{ if(u.el){ u.el.onclick=null; u.el.style.cursor=""; u.el.classList.remove("foeglow"); } }); }
@@ -1081,37 +1120,39 @@ function pickTarget(t){ if(!B.awaiting||!B.awaiting.startsWith("target"))return;
   doAttack(u,t,mid,m).then(()=>endPlayerAction(u)); }
 function endPlayerAction(u){ B.awaiting=null; $("#hud").classList.remove("show"); setTimeout(()=>advanceTurn(),240); }
 
-function isKi(m){ return m.sfx==="ki"; }
 function drawCS(canvas,key){ const g=canvas.getContext("2d"); g.setTransform(1,0,0,1,0,0); g.clearRect(0,0,canvas.width,canvas.height); drawChar(g,0,0,canvas.width,key); }
 let CS_on=true;
-function playKiCutscene(attacker,target,move){
+// Cinematic cut-in — reserved for CRITICAL HITS (rare & dramatic).
+function playAttackCutscene(attacker,target,move,crit){
   return new Promise(resolve=>{
-    if(!CS_on){ if(move.beam) beamFx(attacker,target,move.beam); AUDIO.sfx("ki"); return setTimeout(resolve,260); }
-    const cs=$("#cutscene"), col=move.beam||"#7fe0ff";
+    if(!CS_on){ AUDIO.sfx("hit"); return setTimeout(resolve,120); }
+    const cs=$("#cutscene"), col=crit?"#ffd24a":(move.beam||"#7fe0ff");
     cs.style.setProperty("--csc",col);
     drawCS($("#csAtk"),attacker.spr||"default"); drawCS($("#csTgt"),target.spr||"default");
-    $("#csName").textContent=move.name;
+    $("#csName").innerHTML=(crit?'<div class="cs-crit">✦ CRITICAL HIT ✦</div>':'')+(move.name||"Strike");
     const parts=[$("#csName"),$("#csAura"),$("#csCharge"),$("#csBeam"),$("#csFlash"),$("#csTgtW"),$("#csAtkW")];
     parts.forEach(e=>{ e.classList.remove("show","go","fire","flinch"); void e.offsetWidth; });
     cs.style.display="block";
-    $("#csName").classList.add("show"); $("#csAura").style.opacity=""; $("#csCharge").classList.add("go");
-    AUDIO.sfx("ki");
+    $("#csName").classList.add("show"); $("#csCharge").classList.add("go");
+    AUDIO.sfx(move.beam?"ki":"transform");
     const timers=[]; let done=false;
     const finish=()=>{ if(done)return; done=true; timers.forEach(clearTimeout); cs.style.display="none";
       cs.onclick=null; document.removeEventListener("keydown",onKey,true); resolve(); };
     const onKey=e=>{ e.preventDefault(); e.stopPropagation(); finish(); };
     cs.onclick=finish; document.addEventListener("keydown",onKey,true);
     timers.push(setTimeout(()=>{ $("#csBeam").classList.add("fire"); $("#csTgtW").classList.add("flinch");
-      $("#csFlash").classList.add("go"); shake(); AUDIO.sfx("hit"); },620));
-    timers.push(setTimeout(finish,1240));
+      $("#csFlash").classList.add("go"); shake(); AUDIO.sfx("hit"); },600));
+    timers.push(setTimeout(finish,1200));
   });
 }
 async function doAttack(u,t,mid,m){ if(m.ki)u.ki-=m.ki; actFx(u); updateBars(u);
-  if(isKi(m)){ if(m.slow) logB(`<b>${u.name}</b> charges <span class="k">${m.name}</span>...`); await playKiCutscene(u,t,m); }
-  else { if(m.sfx)AUDIO.sfx(m.sfx); await wait(180); }
+  if(m.sfx)AUDIO.sfx(m.sfx);
+  if(m.slow){ logB(`<b>${u.name}</b> charges <span class="k">${m.name}</span>...`); await wait(360); } else await wait(150);
   const r=computeDamage(u,t,m);
   if(r.miss){ floatText(t,"MISS","miss"); logB(`${u.name}'s ${m.name} <span class="r">missed!</span>`); return; }
-  applyDamage(t,r.dmg); hitFx(t); shake(); whiteFlash(m.slow?.5:.25); AUDIO.sfx("hit");
+  if(r.crit){ await playAttackCutscene(u,t,m,true); }         // cut-scene only on a critical hit
+  else if(m.beam){ beamFx(u,t,m.beam); await wait(170); }
+  applyDamage(t,r.dmg); hitFx(t); shake(); whiteFlash(r.crit?.6:.28); AUDIO.sfx("hit");
   floatText(t,(r.pierced?"⟿":"")+r.dmg, r.crit?"crit":(r.pierced?"pierce":"dmg"));
   logB(`<b>${u.name}</b> hits <b>${t.name}</b> with ${m.name} for <span class="g">${r.dmg}</span>${r.crit?" <span class='g'>CRIT!</span>":""}${r.pierced?" <span class='k'>(pierced)</span>":""}`);
   if(mid==="punch"){ u.ki=Math.min(u.maxKi,u.ki+(m.regen||0)); updateBars(u); }
@@ -1142,12 +1183,13 @@ async function enemyAct(e){ $("#hud").classList.add("show"); $("#actions").inner
   await execEnemyMove(e,mv); afterEnemy(e); }
 async function execEnemyMove(e,mv){ const targets=mv.aoe?livingAllies():[pickEnemyTarget()];
   if(!targets.length||!targets[0]){ return; } // no-target guard (dbz-combat#E3)
-  if(mv.beam){ await playKiCutscene(e,targets[0],{name:mv.name,beam:mv.beam}); }
-  else AUDIO.sfx("hit");
+  if(mv.beam){ for(const t of targets) beamFx(e,t,mv.beam); await wait(170); AUDIO.sfx("ki"); } else AUDIO.sfx("hit");
+  let firstCrit=true;
   for(const t of targets){ const r=computeDamage(e,t,{rate:mv.rate||1.4,pierce:mv.pierce||0});
     if(r.miss){ floatText(t,"MISS","miss"); logB(`${e.name}'s ${mv.name} missed ${t.name}.`); continue; }
-    let dmg=r.dmg; if(t.guarding)dmg=Math.floor(dmg*0.4); applyDamage(t,dmg); hitFx(t); shake(); whiteFlash(mv.aoe?.6:.3); AUDIO.sfx("hit");
-    floatText(t,dmg,r.crit?"crit":"dmg"); logB(`<span class="r">${e.name}</span> uses <b>${mv.name}</b> on <b>${t.name}</b> — <span class="r">${dmg}</span>${t.guarding?" <span class='k'>(guarded)</span>":""}`);
+    if(r.crit&&firstCrit){ firstCrit=false; await playAttackCutscene(e,t,{name:mv.name,beam:mv.beam||"#ff5a4a"},true); }
+    let dmg=r.dmg; if(t.guarding)dmg=Math.floor(dmg*0.4); applyDamage(t,dmg); hitFx(t); shake(); whiteFlash(r.crit?.6:(mv.aoe?.5:.3)); AUDIO.sfx("hit");
+    floatText(t,dmg,r.crit?"crit":"dmg"); logB(`<span class="r">${e.name}</span> uses <b>${mv.name}</b> on <b>${t.name}</b> — <span class="r">${dmg}</span>${r.crit?" <span class='g'>CRIT!</span>":""}${t.guarding?" <span class='k'>(guarded)</span>":""}`);
     if(t.hp<=0) await faint(t); } }
 async function enemySpecial(e,mv){ const t=pickEnemyTarget(); if(!t)return;
   if(mv.special==="steal"){ const s=Math.floor(t.atk*0.3); t.atk-=s; e.atk+=s; updateBars(e); whiteFlash(.8); AUDIO.sfx("transform"); logB(`<span class="r">${e.name}</span> uses Body Change on <b>${t.name}</b> — steals power!`); }
@@ -1188,12 +1230,15 @@ function show(id){ ["screen-title","screen-roster","screen-result"].forEach(s=>{
   $("#overworld").style.display=(id==="overworld")?"block":"none"; }
 
 function enterWorld(){
-  S.heroes=S.party.map(makeHero); S.storyIdx=0; S.over=false; S.cleared=new Set();
+  // Story-driven roster: start as Goku alone; allies are found on the map or
+  // join automatically as the story advances.
+  S.storyIdx=0; S.over=false; S.cleared=new Set(); S.recruited=new Set(["goku"]);
+  S.heroes=[makeHero("goku")]; S.party=["goku"];
   MODE="overworld"; show("overworld");
   OW.canvas=$("#owCanvas"); OW.ctx=OW.canvas.getContext("2d"); resizeCanvas();
   loadMap("paozu");
   if(!OW.raf) OW.raf=requestAnimationFrame(owStep);
-  toast("Explore with WASD / arrows or the pad. Press Space / Ⓐ to talk.");
+  toast("You're alone — find allies! Talk to everyone. Move: WASD/pad · Talk: Space/Ⓐ");
 }
 
 /* roster */
@@ -1210,8 +1255,7 @@ function togglePick(id,c){ const i=S.party.indexOf(id);
   $("#startGame").disabled=S.party.length!==3; }
 
 /* wiring */
-$("#toRoster").onclick=()=>{ AUDIO.gesture(); AUDIO.sfx("menu"); show("screen-roster"); MODE="roster"; buildRoster(); };
-$("#startGame").onclick=()=>{ AUDIO.gesture(); AUDIO.sfx("win"); enterWorld(); };
+$("#toRoster").onclick=()=>{ AUDIO.gesture(); AUDIO.sfx("win"); enterWorld(); };  // straight into the story — no team select
 $("#soundBtn").onclick=()=>{ AUDIO.gesture(); const on=AUDIO.toggle(); $("#soundBtn").textContent=on?"🔊":"🔇"; };
 $("#btnA").onclick=()=>{ AUDIO.gesture(); if(OW.dialogOpen){ if(OW.advance)OW.advance(); } else interactFront(); };
 $("#btnB").onclick=()=>{ AUDIO.gesture(); if(OW.dialogOpen){ if(OW.advance)OW.advance(); } };

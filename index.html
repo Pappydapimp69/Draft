@@ -403,9 +403,22 @@ const SPRITES={
   korin:{type:"korin"},
   trainbot:{type:"h",skin:"#c2ccdd",gi:"#5a6b8a",pants:"#39435c",boots:"#262c3c",gloves:"#8894ad",hair:"none",eye:"#39f"},
   yamcha:{type:"h",skin:SKIN,gi:"#e07a2a",under:"#3a6bd6",pants:"#39435c",boots:"#2a3040",hair:"gohan",hairC:"#20242c"},
+  oxking:{type:"h",skin:SKIN,gi:"#7a4a2a",pants:"#5a3a20",boots:"#3a2a18",big:true,beard:true,beardC:"#4a3320",hair:"none",horns:true,hornColor:"#d8c39a"},
+  nurse:{type:"h",skin:SKIN,gi:"#f2f2f2",pants:"#f0b0c8",boots:"#e05a8a",hair:"bob",hairC:"#b83a5a"},
+  launch:{type:"h",skin:SKIN,gi:"#3a6bd6",pants:"#2a4a9a",boots:"#e05a8a",hair:"bob",hairC:"#3ac0d0"},
+  kingkai:{type:"h",skin:"#4aa0d0",gi:"#1a1a1a",pants:"#141414",boots:"#333",antennae:true,glasses:true,hair:"none"},
+  grandkai:{type:"h",skin:"#8fce8f",gi:"#e07a2a",pants:"#3a3a3a",boots:"#222",glasses:true,hair:"raditz",hairC:"#eaeaea"},
+  popo:{type:"h",skin:"#2b2b2b",gi:"#c0392b",pants:"#1a1a1a",boots:"#3a2a18",turban:"#efeef2",turbanTrim:"#c0392b",hair:"none"},
+  supremekai:{type:"h",skin:"#c49ad8",gi:"#3a6b8a",pants:"#2a4a5a",boots:"#222",hair:"vegeta",hairC:"#f0f0f0"},
+  witch:{type:"h",skin:"#a8c4d4",gi:"#7a4fd0",pants:"#5a3a9a",boots:"#3a2a5a",turban:"#4a2f7a",turbanTrim:"#c9a24a",hair:"none",big:true},
+  snake:{type:"h",skin:"#e6a6c6",gi:"#c0392b",pants:"#7a2d6a",boots:"#4a2d4a",hair:"gohan",hairC:"#20242c"},
+  bubbles:{type:"h",skin:"#8a5a3a",gi:"#8a5a3a",pants:"#7a4a2a",boots:"#5a3a1a",tail:true,hair:"none",eye:"#20140a"},
+  turtle:{type:"turtle"},
   default:{type:"h",skin:SKIN,gi:"#8890a0",pants:"#5a6070",boots:"#333",hair:"none"},
 };
-const NAME2SPR={"Chi-Chi":"chichi","Bulma":"bulma","Master Roshi":"roshi","Korin":"korin","Dende":"dende","Elder Guru":"guru","Yamcha":"yamcha"};
+const NAME2SPR={"Chi-Chi":"chichi","Bulma":"bulma","Master Roshi":"roshi","Korin":"korin","Dende":"dende","Elder Guru":"guru","Yamcha":"yamcha",
+  "Ox-King":"oxking","Nurse":"nurse","Launch":"launch","Turtle":"turtle","King Kai":"kingkai","Bubbles":"bubbles",
+  "Princess Snake":"snake","Grand Kai":"grandkai","Mr. Popo":"popo","Supreme Kai":"supremekai","Old Witch":"witch"};
 function _rr(c,x,y,w,h,r){ r=Math.min(r,w/2,h/2); c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); c.fill(); }
 function _tri(c,ax,ay,bx,by,cx,cy){ c.beginPath(); c.moveTo(ax,ay); c.lineTo(bx,by); c.lineTo(cx,cy); c.closePath(); c.fill(); }
 function drawChar(ctx,X,Y,s,key){ const sp=SPRITES[key];
@@ -417,6 +430,7 @@ function drawChar(ctx,X,Y,s,key){ const sp=SPRITES[key];
   if(spec.type==="buu") return drawBuu(ctx,X,Y,s,spec.kid);
   if(spec.type==="saibaman") return drawSaibaman(ctx,X,Y,s);
   if(spec.type==="korin") return drawKorin(ctx,X,Y,s);
+  if(spec.type==="turtle") return drawTurtle(ctx,X,Y,s);
   return drawHuman(ctx,X,Y,s,SPRITES.default);
 }
 function makeSprite(key,size){ const c=document.createElement("canvas"); const dpr=window.devicePixelRatio||1;
@@ -541,6 +555,18 @@ function drawBuu(ctx,X,Y,s,kid){ const px=f=>X+f*s,py=f=>Y+f*s,u=f=>f*s; const s
     ctx.fillStyle="#c00"; ctx.beginPath(); ctx.arc(px(.45),py(.27),u(.015),0,7); ctx.arc(px(.55),py(.27),u(.015),0,7); ctx.fill();
     ctx.strokeStyle="#a03a5a"; ctx.lineWidth=u(.02); ctx.beginPath(); ctx.moveTo(px(.4),py(.2)); ctx.lineTo(px(.47),py(.24)); ctx.moveTo(px(.6),py(.2)); ctx.lineTo(px(.53),py(.24)); ctx.stroke();
   } }
+function drawTurtle(ctx,X,Y,s){ const px=f=>X+f*s,py=f=>Y+f*s,u=f=>f*s;
+  ctx.fillStyle="rgba(0,0,0,0.22)"; ctx.beginPath(); ctx.ellipse(px(.5),py(.9),u(.28),u(.06),0,0,7); ctx.fill();
+  ctx.fillStyle="#6a9a4a"; _rr(ctx,px(.2),py(.62),u(.13),u(.16),u(.05)); _rr(ctx,px(.67),py(.62),u(.13),u(.16),u(.05));
+  ctx.fillStyle="#8a6a34"; ctx.beginPath(); ctx.ellipse(px(.5),py(.56),u(.32),u(.26),0,0,7); ctx.fill();
+  ctx.fillStyle="#a5843f"; ctx.beginPath(); ctx.ellipse(px(.5),py(.54),u(.24),u(.18),0,0,7); ctx.fill();
+  ctx.strokeStyle="rgba(0,0,0,.22)"; ctx.lineWidth=u(.02);
+  for(const a of [-.6,-.2,.2,.6]){ ctx.beginPath(); ctx.moveTo(px(.5),py(.54)); ctx.lineTo(px(.5+a*0.42),py(.34)); ctx.stroke(); }
+  ctx.beginPath(); ctx.ellipse(px(.5),py(.54),u(.14),u(.1),0,0,7); ctx.stroke();
+  ctx.fillStyle="#6a9a4a"; ctx.beginPath(); ctx.arc(px(.5),py(.3),u(.13),0,7); ctx.fill();
+  ctx.fillStyle="#fff"; ctx.beginPath(); ctx.arc(px(.45),py(.28),u(.032),0,7); ctx.arc(px(.55),py(.28),u(.032),0,7); ctx.fill();
+  ctx.fillStyle="#111"; ctx.beginPath(); ctx.arc(px(.45),py(.29),u(.015),0,7); ctx.arc(px(.55),py(.29),u(.015),0,7); ctx.fill();
+  ctx.strokeStyle="#2a3a1a"; ctx.lineWidth=u(.018); ctx.beginPath(); ctx.arc(px(.5),py(.33),u(.045),0.1*Math.PI,0.9*Math.PI); ctx.stroke(); }
 function drawKorin(ctx,X,Y,s){ const px=f=>X+f*s,py=f=>Y+f*s,u=f=>f*s;
   ctx.fillStyle="rgba(0,0,0,0.22)"; ctx.beginPath(); ctx.ellipse(px(.5),py(.94),u(.2),u(.05),0,0,7); ctx.fill();
   ctx.strokeStyle="#a5744a"; ctx.lineWidth=u(.03); ctx.beginPath(); ctx.moveTo(px(.72),py(.1)); ctx.lineTo(px(.72),py(.92)); ctx.stroke();

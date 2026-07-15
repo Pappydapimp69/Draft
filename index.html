@@ -193,6 +193,48 @@
   @keyframes csFlash{0%{opacity:0}12%{opacity:.92}100%{opacity:0}}
   .cs-crit{font-size:.46em;letter-spacing:4px;color:#ffd24a;-webkit-text-fill-color:#ffd24a;margin-bottom:2px}
   .cs-skip{position:absolute;bottom:10px;right:14px;color:#8fa2c9;font-size:12px;z-index:3;opacity:.8}
+
+  /* ---- overworld HUD extras ---- */
+  .owStats{position:absolute;top:9px;left:50%;transform:translateX(-50%);z-index:5;
+    background:rgba(10,16,32,.8);border:1px solid var(--line);border-radius:20px;padding:4px 14px;
+    font-size:13px;font-weight:bold;color:var(--gold)}
+  .menuBtn{position:absolute;top:8px;right:54px;z-index:6;width:38px;height:38px;border-radius:50%;
+    border:1px solid var(--line);background:rgba(20,28,48,.9);color:var(--ink);font-size:18px;cursor:pointer}
+  .menuBtn:active{transform:scale(.92)}
+
+  /* ---- modal overlays (menu / shop) ---- */
+  .ovl{position:absolute;inset:0;z-index:30;display:none;background:rgba(4,7,14,.82);
+    align-items:center;justify-content:center;padding:14px;padding-bottom:calc(14px + env(safe-area-inset-bottom))}
+  .ovl.show{display:flex}
+  .ovlbox{width:100%;max-width:560px;max-height:100%;display:flex;flex-direction:column;
+    background:linear-gradient(180deg,#141d33,#0c1322);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+  .ovlhead{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);font-size:17px}
+  .ovlhead b{flex:1}.ovlzeni{color:var(--gold);font-weight:bold;font-size:14px}
+  .ovlx{width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);cursor:pointer;font-size:14px}
+  .ovltabs{display:flex;gap:6px;padding:8px 12px 0}
+  .ovltabs button{flex:1;padding:8px;border:1px solid var(--line);background:var(--panel);color:var(--dim);border-radius:10px 10px 0 0;cursor:pointer;font-weight:bold}
+  .ovltabs button.on{color:var(--ink);border-color:var(--orange);background:var(--panel2)}
+  .ovlbody{padding:12px 14px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .mcard{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:10px;background:var(--panel)}
+  .mcard .top{display:flex;align-items:center;gap:10px}
+  .mcard .top canvas{width:44px;height:44px}
+  .mcard .nm{font-weight:bold}.mcard .lv{color:var(--gold);font-size:12px}
+  .mcard .xpbar{height:6px;border-radius:4px;background:#0a1020;overflow:hidden;margin-top:4px;border:1px solid #0c1526}
+  .mcard .xpbar>i{display:block;height:100%;background:linear-gradient(90deg,#ffb347,#ffd24a)}
+  .mcard .stats{font-size:12px;color:var(--dim);margin-top:6px;line-height:1.6}
+  .traitrow{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .traitrow button{padding:5px 9px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:8px;font-size:12px;cursor:pointer}
+  .traitrow button:hover:not(:disabled){border-color:var(--orange)}
+  .traitrow button:disabled{opacity:.35;cursor:not-allowed}
+  .sp{color:var(--ki2);font-size:12px;font-weight:bold}
+  .shoprow{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:9px;background:var(--panel)}
+  .shoprow .si{flex:1}.shoprow .si .nm{font-weight:bold}.shoprow .si .d{font-size:12px;color:var(--dim)}
+  .shoprow .price{color:var(--gold);font-weight:bold;font-size:13px}
+  .shoprow button{padding:7px 12px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:9px;cursor:pointer;font-weight:bold}
+  .shoprow button:hover:not(:disabled){border-color:var(--hp)}
+  .shoprow button:disabled{opacity:.4;cursor:not-allowed}
+  .userow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px}
+  .userow button{padding:5px 9px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:8px;font-size:12px;cursor:pointer}
   @media(max-width:520px){.actions .btn{font-size:12px}.hero{width:132px}}
 </style>
 </head>
@@ -225,6 +267,8 @@
       <div class="owTop">
         <div><div class="area" id="areaName">—</div><div class="hint" id="areaHint"></div></div>
       </div>
+      <div class="owStats" id="owStats"><span id="zeniDisp">✦ 0</span></div>
+      <button class="menuBtn" id="menuBtn" title="Menu (M)">☰</button>
       <button class="soundBtn" id="soundBtn" title="Sound">🔊</button>
       <div class="partyStrip" id="partyStrip"></div>
       <div class="dpad" id="dpad">
@@ -285,6 +329,23 @@
     <div class="cs-flash" id="csFlash"></div>
     <div class="cs-skip">tap / any key to skip</div>
   </div>
+
+  <!-- PARTY / STATS MENU -->
+  <div class="ovl" id="menu">
+    <div class="ovlbox">
+      <div class="ovlhead"><b>Party &amp; Skills</b><span class="ovlzeni" id="menuZeni">✦ 0</span><button class="ovlx" id="menuClose">✕</button></div>
+      <div class="ovltabs" id="menuTabs"><button class="on" data-tab="party">Fighters</button><button data-tab="items">Items</button></div>
+      <div class="ovlbody" id="menuBody"></div>
+    </div>
+  </div>
+
+  <!-- SHOP -->
+  <div class="ovl" id="shop">
+    <div class="ovlbox">
+      <div class="ovlhead"><b id="shopName">Capsule Shop</b><span class="ovlzeni" id="shopZeni">✦ 0</span><button class="ovlx" id="shopClose">✕</button></div>
+      <div class="ovlbody" id="shopBody"></div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -330,9 +391,11 @@ const SPRITES={
   dende:{type:"h",skin:"#8fce8f",gi:"#d8b84a",belt:"#7a4fd0",boots:"#7a4fd0",antennae:true,hair:"none",short:true},
   guru:{type:"h",skin:"#9fce9f",gi:"#b03a3a",pants:"#b03a3a",boots:"#5a2d2d",antennae:true,hair:"none",beard:true,beardC:"#eaeaea",big:true},
   korin:{type:"korin"},
+  trainbot:{type:"h",skin:"#c2ccdd",gi:"#5a6b8a",pants:"#39435c",boots:"#262c3c",gloves:"#8894ad",hair:"none",eye:"#39f"},
+  yamcha:{type:"h",skin:SKIN,gi:"#e07a2a",under:"#3a6bd6",pants:"#39435c",boots:"#2a3040",hair:"gohan",hairC:"#20242c"},
   default:{type:"h",skin:SKIN,gi:"#8890a0",pants:"#5a6070",boots:"#333",hair:"none"},
 };
-const NAME2SPR={"Chi-Chi":"chichi","Bulma":"bulma","Master Roshi":"roshi","Korin":"korin","Dende":"dende","Elder Guru":"guru"};
+const NAME2SPR={"Chi-Chi":"chichi","Bulma":"bulma","Master Roshi":"roshi","Korin":"korin","Dende":"dende","Elder Guru":"guru","Yamcha":"yamcha"};
 function _rr(c,x,y,w,h,r){ r=Math.min(r,w/2,h/2); c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); c.fill(); }
 function _tri(c,ax,ay,bx,by,cx,cy){ c.beginPath(); c.moveTo(ax,ay); c.lineTo(bx,by); c.lineTo(cx,cy); c.closePath(); c.fill(); }
 function drawChar(ctx,X,Y,s,key){ const sp=SPRITES[key];
@@ -493,19 +556,39 @@ const AUDIO=(()=>{
   let on = (localStorage.getItem("dbz_sound")||"on")!=="off";
   let curTrack=null, nextTime=0, stepIdx=0, timer=null;
   const voices=new Set(); const cool={};
-  // A minor pentatonic pool
+  // note table (used by some SFX)
   const F={A2:110,C3:130.81,D3:146.83,E3:164.81,G3:196,A3:220,C4:261.63,D4:293.66,E4:329.63,G4:392,A4:440,C5:523.25,E5:659.25};
-  const R=0; // rest
-  const TRACKS={
-    overworld:{bpm:100, bass:[F.A2,R,F.E3,R,F.A2,R,F.G3,R, F.D3,R,F.A2,R,F.E3,R,F.D3,R],
-                        lead:[F.A4,R,R,F.C5,R,F.A4,F.G4,R, F.E4,R,F.G4,R,F.A4,R,R,R]},
-    battle:{bpm:150,    bass:[F.A2,F.A2,F.E3,F.E3,F.G3,F.G3,F.A2,F.A2, F.D3,F.D3,F.E3,F.E3,F.A2,F.A2,F.E3,F.G3],
-                        lead:[F.A4,R,F.E4,F.A4,R,F.C5,R,F.A4, F.G4,R,F.E4,F.G4,R,F.A4,F.C5,R]},
-    boss:{bpm:132,      bass:[F.A2,R,F.A2,F.C3,R,F.A2,F.G3,R, F.A2,R,F.A2,F.D3,R,F.C3,F.A2,R],
-                        lead:[F.C5,R,F.A4,R,F.E4,R,F.A4,F.G4, F.C5,R,F.E5,R,F.D4,R,F.C5,R]},
-    victory:{bpm:120,   bass:[F.A2,F.E3,F.A3,F.C4,F.E4,R,R,R, R,R,R,R,R,R,R,R],
-                        lead:[F.A4,F.C5,F.E5,R,F.C5,F.E5,R,R, R,R,R,R,R,R,R,R], once:true}
+  // ---- multi-layer music engine: bass · pads (chord progressions) · arpeggio · generated lead · drums ----
+  const semi=(root,n)=>root*Math.pow(2,n/12);
+  const SCALES={ maj:[0,2,4,5,7,9,11], min:[0,2,3,5,7,8,10], majPent:[0,2,4,7,9], minPent:[0,3,5,7,10], dorian:[0,2,3,5,7,9,10], lydian:[0,2,4,6,7,9,11] };
+  // one theme per environment mood: root Hz · scale · chord-root progression (semitones/bar) · tempo · energy · layers
+  const THEMES={
+    heroic:   {root:220,scale:"majPent",prog:[0,7,-3,5], bpm:112,energy:.5, pad:1,drums:1,mood:1,lead:"square",  bass:"triangle"},
+    town:     {root:262,scale:"maj",    prog:[0,5,7,5],  bpm:126,energy:.65,pad:1,drums:1,mood:1,lead:"square",  bass:"triangle"},
+    calm:     {root:196,scale:"lydian", prog:[0,5,-5,-2],bpm:84, energy:.15,pad:1,drums:0,mood:1,lead:"sine",    bass:"sine"},
+    battle:   {root:220,scale:"minPent",prog:[0,-2,5,3], bpm:152,energy:.9, pad:0,drums:1,mood:0,lead:"sawtooth",bass:"triangle"},
+    boss:     {root:196,scale:"min",    prog:[0,-1,-3,-5],bpm:138,energy:.8,pad:1,drums:1,mood:0,lead:"square",  bass:"sawtooth"},
+    finalboss:{root:174,scale:"min",    prog:[0,3,-2,-4],bpm:160,energy:1,  pad:1,drums:1,mood:0,lead:"sawtooth",bass:"sawtooth"},
+    eerie:    {root:165,scale:"min",    prog:[0,1,-2,0], bpm:96, energy:.3, pad:1,drums:0,mood:0,lead:"triangle",bass:"sine"},
+    cosmic:   {root:147,scale:"lydian", prog:[0,7,4,9],  bpm:76, energy:.25,pad:1,drums:0,mood:1,lead:"sine",    bass:"sine"},
+    sacred:   {root:262,scale:"maj",    prog:[0,4,7,5],  bpm:72, energy:.2, pad:1,drums:0,mood:1,lead:"triangle",bass:"sine"},
+    snow:     {root:294,scale:"maj",    prog:[0,-3,5,-5],bpm:100,energy:.4, pad:1,drums:0,mood:1,lead:"triangle",bass:"sine"},
+    desert:   {root:196,scale:"dorian", prog:[0,5,3,-2], bpm:104,energy:.45,pad:1,drums:1,mood:1,lead:"square",  bass:"triangle"},
+    victory:  {root:262,scale:"maj",    prog:[0,5,7,0],  bpm:120,energy:.7, pad:1,drums:1,mood:1,lead:"square",  bass:"triangle",once:1},
   };
+  const STEPS_BAR=8;
+  function mprng(seed){ let s=(seed>>>0)||1; return ()=>{ s=(Math.imul(s,1664525)+1013904223)>>>0; return s/4294967296; }; }
+  function themeSeed(name){ let h=2166136261; for(let i=0;i<name.length;i++){ h^=name.charCodeAt(i); h=Math.imul(h,16777619); } return h>>>0; }
+  const LEADS={};
+  function leadFor(name){ if(LEADS[name])return LEADS[name]; const t=THEMES[name]; const sc=SCALES[t.scale];
+    const rnd=mprng(themeSeed(name)); const bars=t.prog.length, len=bars*STEPS_BAR, seq=[];
+    for(let i=0;i<len;i++){ const strong=(i%STEPS_BAR)%2===0;
+      if(rnd()<(strong?0.22:0.55)){ seq.push(null); continue; }
+      const chordRoot=t.prog[Math.floor(i/STEPS_BAR)%bars];
+      let deg=(strong&&rnd()<0.7)?[0,2,4][Math.floor(rnd()*3)]:Math.floor(rnd()*sc.length);
+      seq.push(chordRoot + sc[deg%sc.length] + 12 + (rnd()<0.3?12:0)); }
+    LEADS[name]=seq; return seq; }
+  let _ns=12345; function mnoise(){ _ns=(Math.imul(_ns,1103515245)+12345)>>>0; return (_ns/4294967296)*2-1; }
   function init(){
     if(ctx) return;
     try{ ctx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ ctx=null; return; }
@@ -526,29 +609,45 @@ const AUDIO=(()=>{
   }
   function resume(){ try{ if(ctx && ctx.state!=="running") ctx.resume(); }catch(e){} } // fire-and-forget (dog#E1)
   function gesture(){ init(); resume(); if(ctx && !timer) timer=setInterval(scheduler,25); }
-  function note(time,freq,dur,type,gain,dest){
+  function voice(time,freq,dur,type,gain,dest,cutoff){
     if(!ctx||!isFinite(freq)||freq<=0) return; // guard boundary (dog#E3)
-    const o=ctx.createOscillator(), g=ctx.createGain();
-    o.type=type; o.frequency.setValueAtTime(freq,time);
-    g.gain.setValueAtTime(0.0001,time);
-    g.gain.exponentialRampToValueAtTime(gain,time+0.012);
-    g.gain.exponentialRampToValueAtTime(0.0001,time+dur);
+    const o=ctx.createOscillator(), g=ctx.createGain(); o.type=type; o.frequency.setValueAtTime(freq,time);
+    g.gain.setValueAtTime(0.0001,time); g.gain.exponentialRampToValueAtTime(gain,time+0.014); g.gain.exponentialRampToValueAtTime(0.0001,time+dur);
+    if(cutoff){ const f=ctx.createBiquadFilter(); f.type="lowpass"; f.frequency.setValueAtTime(cutoff,time);
+      o.connect(f); f.connect(g); g.connect(dest||music); o.start(time); o.stop(time+dur+0.03);
+      o.onended=()=>{ try{o.disconnect();f.disconnect();g.disconnect();}catch(e){} }; return; }
     o.connect(g); g.connect(dest||music); o.start(time); o.stop(time+dur+0.02);
     o.onended=()=>{ try{o.disconnect();g.disconnect();}catch(e){} }; // free nodes (dog#E6)
   }
+  function note(time,freq,dur,type,gain,dest){ voice(time,freq,dur,type,gain,dest); } // back-compat (some SFX)
+  function chordAt(time,root,chordRoot,dur,gain,major){ const th=major?4:3; const base=semi(root,chordRoot);
+    [0,th,7].forEach((iv,k)=>voice(time, semi(base,iv), dur, "triangle", gain*(k===0?1:0.66), music, 1400)); }
+  function drum(time,kind,gain){ if(!ctx)return;
+    if(kind==="kick"){ const o=ctx.createOscillator(),g=ctx.createGain(); o.type="sine"; o.frequency.setValueAtTime(150,time); o.frequency.exponentialRampToValueAtTime(45,time+0.12);
+      g.gain.setValueAtTime(gain,time); g.gain.exponentialRampToValueAtTime(0.0001,time+0.17); o.connect(g); g.connect(music); o.start(time); o.stop(time+0.19); o.onended=()=>{try{o.disconnect();g.disconnect();}catch(e){}}; return; }
+    const len=Math.floor(ctx.sampleRate*(kind==="snare"?0.14:0.05)); const b=ctx.createBuffer(1,len,ctx.sampleRate); const d=b.getChannelData(0);
+    for(let i=0;i<len;i++)d[i]=mnoise()*Math.pow(1-i/len,kind==="snare"?1.2:3);
+    const s=ctx.createBufferSource(); s.buffer=b; const f=ctx.createBiquadFilter(); f.type=kind==="snare"?"bandpass":"highpass"; f.frequency.value=kind==="snare"?1800:7000;
+    const g=ctx.createGain(); g.gain.setValueAtTime(gain,time); g.gain.exponentialRampToValueAtTime(0.0001,time+(kind==="snare"?0.15:0.05));
+    s.connect(f); f.connect(g); g.connect(music); s.start(time); s.stop(time+0.16); s.onended=()=>{try{s.disconnect();f.disconnect();g.disconnect();}catch(e){}}; }
   function scheduler(){ // look-ahead window on ctx.currentTime (shadow#E1)
-    if(!ctx||!curTrack) return;
-    const t=TRACKS[curTrack]; const spb=60/t.bpm/2; // eighth notes
+    if(!ctx||!curTrack) return; const t=THEMES[curTrack]||THEMES.heroic; const spb=60/t.bpm/2; // eighth-note grid
+    const lead=leadFor(curTrack), bars=t.prog.length, loop=bars*STEPS_BAR, th=t.mood?4:3;
     while(nextTime < ctx.currentTime+0.15){
-      const b=t.bass[stepIdx], l=t.lead[stepIdx];
-      if(b) note(nextTime,b,spb*0.95,"triangle",0.5,music);
-      if(l) note(nextTime,l*1,spb*0.8,"square",0.22,music);
+      const gi=stepIdx%loop, bar=Math.floor(gi/STEPS_BAR), beat=gi%STEPS_BAR, chordRoot=t.prog[bar%bars];
+      if(beat%2===0) voice(nextTime, semi(t.root,chordRoot-12), spb*(t.energy>.7?1.8:3.4), t.bass, 0.5, music, 480);
+      if(t.energy>.7 && beat===2) voice(nextTime, semi(t.root,chordRoot-12), spb*1.5, t.bass, 0.32, music, 480);
+      if(t.pad && beat===0) chordAt(nextTime, t.root, chordRoot, spb*STEPS_BAR*0.94, 0.12, t.mood);
+      if(t.energy>.55){ const arp=[0,th,7,12][beat%4]; voice(nextTime, semi(t.root,chordRoot+arp), spb*0.85, "square", 0.09, music, 2200); }
+      const ln=lead[gi]; if(ln!=null) voice(nextTime, semi(t.root,ln), spb*1.4, t.lead, 0.19, music, 3800);
+      if(t.drums){ if(beat===0||beat===4)drum(nextTime,"kick",0.5); if(beat===2||beat===6)drum(nextTime,"snare",0.3);
+        if(t.energy>.62 && beat%2===1)drum(nextTime,"hat",0.14); }
       stepIdx++;
-      if(stepIdx>=t.bass.length){ stepIdx=0; if(t.once){ curTrack=null; break; } }
+      if(stepIdx>=loop){ stepIdx=0; if(t.once){ curTrack=null; break; } }
       nextTime+=spb;
     }
   }
-  function playMusic(name){ init(); if(!ctx) return; if(curTrack===name) return;
+  function playMusic(name){ init(); if(!ctx) return; if(!THEMES[name])name="heroic"; if(curTrack===name) return;
     curTrack=name; stepIdx=0; nextTime=ctx.currentTime+0.06; if(!timer) timer=setInterval(scheduler,25); }
   function stopMusic(){ curTrack=null; }
   function setAmbiance(freq){ if(ambFilt&&ctx) try{ ambFilt.frequency.setTargetAtTime(freq,ctx.currentTime,0.4);}catch(e){} }
@@ -645,6 +744,8 @@ const GUARD={name:"Guard",kind:"guard",ki:0,regen:22};
 const ENEMIES={
   saibaman:{name:"Saibaman",av:"🟢",au:"#6c6",hp:260,ki:40,atk:40,def:18,spd:42,pl:1200,trash:true,
     ai:["punch","selfDestruct","punch"],moves:{selfDestruct:{name:"Acid Spit",rate:1.6,ki:0,beam:"#9f9"}}},
+  trainbot:{name:"Sparring Bot",av:"🤖",au:"#9cf",hp:300,ki:60,atk:44,def:22,spd:46,pl:2000,trash:true,
+    ai:["punch","blast","punch"],moves:{blast:{name:"Practice Blast",rate:1.7,ki:0,beam:"#9cf"}}},
   raditz:{name:"Raditz",av:"👹",au:"#8a5",hp:420,ki:60,atk:50,def:24,spd:44,pl:1500,
     ai:["punch","punch","doubleSunday"],moves:{doubleSunday:{name:"Double Sunday",rate:2.0,ki:0,beam:"#9f9"}}},
   nappa:{name:"Nappa",av:"👺",au:"#c66",hp:640,ki:60,atk:60,def:34,spd:36,pl:4000,
@@ -671,7 +772,7 @@ const STORY=["raditz","nappa","vegeta_s","ginyu","frieza","cell","buu","kidbuu"]
 /* =====================================================================
    PERSISTENT PARTY (carries HP/ki across the world)
    ===================================================================== */
-const S={ party:[], heroes:[], storyIdx:0, map:null, mapId:null, over:false, cleared:new Set(), recruited:new Set() };
+const S={ party:[], heroes:[], storyIdx:0, map:null, mapId:null, over:false, cleared:new Set(), recruited:new Set(), zeni:0, inventory:{} };
 const PARTY_MAX=3;
 function recruitMember(fid){
   if(S.recruited.has(fid) || S.heroes.some(h=>h.fid===fid)) return false;
@@ -688,22 +789,54 @@ function recruitMember(fid){
   drawPartyStrip();
   return true;
 }
-function levelOf(){ return 1 + (S.storyIdx>=3?1:0) + (S.storyIdx>=5?2:0) + (S.storyIdx>=7?2:0); }
-function makeHero(fid){
-  const f=FIGHTERS[fid]; const lv=levelOf(); const g=1+0.16*(lv-1);
-  return {fid,name:f.name,av:f.av,au:f.au,
-    maxHp:Math.round(f.hp*g),hp:Math.round(f.hp*g),maxKi:Math.round(f.ki*(1+0.09*(lv-1))),ki:Math.round(f.ki*(1+0.09*(lv-1))),
-    atk:Math.round(f.atk*g),def:Math.round(f.def*g),spd:f.spd,pl:BigInt(f.pl)*BigInt(Math.round(g*100))/100n};
+/* ---------- XP · levels · traits · stats ---------- */
+const MAXLV=40;
+const TRAITS=[["hp","+HP"],["ki","+Ki"],["atk","+ATK"],["def","+DEF"],["spd","+SPD"],["crit","+Crit"]];
+function xpNeed(lvl){ return Math.floor(70*Math.pow(lvl,1.45)); }   // xp needed to advance FROM this level
+function avgLevel(){ return S.heroes.length?Math.round(S.heroes.reduce((s,h)=>s+h.level,0)/S.heroes.length):1; }
+function applyStats(h){
+  const f=FIGHTERS[h.fid], t=h.traits, lm=1+0.085*(h.level-1);
+  h.maxHp=Math.round(f.hp*lm*(1+0.06*t.hp));
+  h.maxKi=Math.round(f.ki*(1+0.06*(h.level-1))*(1+0.06*t.ki));
+  h.atk=Math.round(f.atk*lm*(1+0.05*t.atk));
+  h.def=Math.round(f.def*lm*(1+0.05*t.def));
+  h.spd=Math.round(f.spd*(1+0.03*t.spd));
+  h.crit=0.12+0.02*t.crit;
+  h.kiMult=Math.max(1,h.maxKi/f.ki);        // ki move costs scale WITH the pool (dbz-combat#E4)
+  h.pl=BigInt(f.pl)*BigInt(Math.round(lm*100*(1+0.05*t.atk)))/100n;
+  if(h.hp!=null)h.hp=Math.min(h.hp,h.maxHp); if(h.ki!=null)h.ki=Math.min(h.ki,h.maxKi);
 }
+function makeHero(fid){
+  const h={fid,name:FIGHTERS[fid].name,av:FIGHTERS[fid].av,au:FIGHTERS[fid].au,
+    level:1,xp:0,sp:0,traits:{hp:0,ki:0,atk:0,def:0,spd:0,crit:0}};
+  applyStats(h); h.hp=h.maxHp; h.ki=h.maxKi; return h;
+}
+function gainXP(h,amt){ h.xp+=amt; let ups=0;
+  while(h.level<MAXLV && h.xp>=xpNeed(h.level)){ h.xp-=xpNeed(h.level); h.level++; h.sp+=3; ups++; }
+  applyStats(h); if(ups){ h.hp=h.maxHp; h.ki=h.maxKi; }  // level-up fully restores
+  return ups;
+}
+function spendTrait(h,key){ if(h.sp<=0)return false; h.sp--; h.traits[key]++;
+  const hpR=h.hp/h.maxHp,kiR=h.ki/h.maxKi; applyStats(h); h.hp=Math.round(h.maxHp*hpR); h.ki=Math.round(h.maxKi*kiR); return true; }
 function healParty(frac){ S.heroes.forEach(h=>{ h.hp=Math.min(h.maxHp,Math.round(h.hp+h.maxHp*frac)); h.ki=Math.min(h.maxKi,Math.round(h.ki+h.maxKi*frac)); }); }
 function fullHeal(){ S.heroes.forEach(h=>{ h.hp=h.maxHp; h.ki=h.maxKi; }); }
-function rescaleHeroes(){ // grow persistent heroes when level increases, preserving damage taken ratio
-  S.heroes.forEach(h=>{ const f=FIGHTERS[h.fid]; const lv=levelOf(); const g=1+0.16*(lv-1);
-    const hpR=h.hp/h.maxHp, kiR=h.ki/h.maxKi;
-    h.maxHp=Math.round(f.hp*g); h.maxKi=Math.round(f.ki*(1+0.09*(lv-1)));
-    h.atk=Math.round(f.atk*g); h.def=Math.round(f.def*g);
-    h.hp=Math.round(h.maxHp*hpR); h.ki=Math.round(h.maxKi*kiR);
-    h.pl=BigInt(f.pl)*BigInt(Math.round(g*100))/100n; }); }
+function rescaleHeroes(){ S.heroes.forEach(applyStats); }
+
+/* ---------- economy: currency + items ---------- */
+const ITEMS={
+  hcap:{name:"Health Capsule",desc:"Restore 45% HP to an ally",price:60,use:"heal",amt:0.45},
+  kcap:{name:"Ki Capsule",desc:"Restore 55% ki to an ally",price:55,use:"ki",amt:0.55},
+  senzu:{name:"Senzu Bean",desc:"Fully revive & heal an ally",price:240,use:"revive"},
+};
+const SHOP_STOCK=["hcap","kcap","senzu"];
+function addItem(id,n){ S.inventory[id]=(S.inventory[id]||0)+(n||1); }
+function itemCount(id){ return S.inventory[id]||0; }
+function applyItem(id,h){ const it=ITEMS[id]; if(!it)return false;
+  if(it.use==="heal"){ if(h.hp<=0)return false; h.hp=Math.min(h.maxHp,Math.round(h.hp+h.maxHp*it.amt)); }
+  else if(it.use==="ki"){ h.ki=Math.min(h.maxKi,Math.round(h.ki+h.maxKi*it.amt)); }
+  else if(it.use==="revive"){ h.hp=h.maxHp; h.ki=h.maxKi; }
+  return true; }
+function costOf(u,m){ return Math.round((m.ki||0)*(u&&u.kiMult||1)); }  // ki cost scales with pool
 
 /* =====================================================================
    OVERWORLD — tile maps, grid movement, NPCs, encounters
@@ -711,93 +844,175 @@ function rescaleHeroes(){ // grow persistent heroes when level increases, preser
    one role per entity (waiting-city#E3); NPC lines from live state.
    ===================================================================== */
 const TILE=40;
-// legend: . grass  , path  T tree(solid)  ~ water(solid)  R rock(solid)  H house(solid)  space=grass
+// legend: . grass  , path  T tree(solid)  ~ water(solid)  R rock(solid)  H house(solid)  > < warp
+// Grids are generated so tile counts are always correct; features are stamped as rects (interior only).
+function mkGrid(w,h,border,feats){
+  const g=[];
+  for(let y=0;y<h;y++){ let row=""; for(let x=0;x<w;x++) row+=(x===0||y===0||x===w-1||y===h-1)?border:"."; g.push(row); }
+  (feats||[]).forEach(function(f){
+    for(let yy=f.y; yy<f.y+(f.h||1); yy++){
+      for(let xx=f.x; xx<f.x+(f.w||1); xx++){
+        if(yy>0&&yy<h-1&&xx>0&&xx<w-1){ const s=g[yy]; g[yy]=s.slice(0,xx)+f.c+s.slice(xx+1); }
+      }
+    }
+  });
+  return g;
+}
+// ---- environment palettes (per-map visual theme) ----
+const ENVS={
+  forest:{ground:"#3a6b3f",edge:"#2e5533",path:"#b9a06a",water:"#2f6fb0",solid:"🌳",rock:"🪨",bldg:"#7a5230"},
+  city:{ground:"#5a6270",edge:"#454b57",path:"#8a92a0",water:"#3a6fb0",solid:"🏢",rock:"🚗",bldg:"#6b7382"},
+  beach:{ground:"#d8c98a",edge:"#b7a86a",path:"#e6d9a2",water:"#2f9fd0",solid:"🌴",rock:"🐚",bldg:"#c98a5a"},
+  desert:{ground:"#c8a45a",edge:"#a5823f",path:"#dcc07a",water:"#3a8fb0",solid:"🌵",rock:"🪨",bldg:"#9a6b3a"},
+  snow:{ground:"#dfe8f2",edge:"#c3cfe0",path:"#c0cfe0",water:"#7fbfe0",solid:"🌲",rock:"⛄",bldg:"#8aa0c0"},
+  space:{ground:"#1a1636",edge:"#100c26",path:"#3a2f6a",water:"#5a3fb0",solid:"✨",rock:"☄️",bldg:"#2a2450"},
+  namek:{ground:"#2f6b52",edge:"#245741",path:"#9ec27a",water:"#2f9fa0",solid:"🌿",rock:"🪨",bldg:"#3a7a5a"},
+  ship:{ground:"#33384a",edge:"#232838",path:"#4a5068",water:"#5a3fb0",solid:"⚙️",rock:"🔩",bldg:"#454b60"},
+  arena:{ground:"#8a8a7a",edge:"#6b6b5c",path:"#a8a898",water:"#3a6fb0",solid:"🪨",rock:"🗿",bldg:"#9a9a86"},
+  voidw:{ground:"#e8ecf4",edge:"#d0d8e8",path:"#d6deec",water:"#c0d0e8",solid:"⬜",rock:"◽",bldg:"#c0c8d8"},
+  sky:{ground:"#c9a06a",edge:"#a5824f",path:"#e0c088",water:"#7fc0e0",solid:"🏯",rock:"🪨",bldg:"#b98a4a"},
+  kai:{ground:"#e0c85a",edge:"#c0a83f",path:"#f0e08a",water:"#e08a4a",solid:"🍄",rock:"🪨",bldg:"#c0a84a"},
+  candy:{ground:"#e88fb0",edge:"#c86f92",path:"#f2b0cc",water:"#c060a0",solid:"🍭",rock:"🍬",bldg:"#d070a0"},
+  darkship:{ground:"#241f38",edge:"#181428",path:"#3a3050",water:"#5a3fb0",solid:"🕯️",rock:"💀",bldg:"#332a48"},
+};
 const MAPS={
-  paozu:{name:"Mount Paozu",hint:"Home of Goku. Talk to everyone, then face what lands to the east.",
-    amb:420, music:"overworld",
-    grid:[
-      "TTTTTTTTTTTTTTTTTT",
-      "T....,,,,....TTT..T",
-      "T.HH.,..,.T....T..T",
-      "T.HH.,..,.T..RR...T",
-      "T....,..,........>T",
-      "T..T.,,,,,,,,,,...T",
-      "T..T.....,....T..RT",
-      "T....RR..,..T.....T",
-      "T.~~.....,....TT..T",
-      "T.~~..T..,,,,.....T",
-      "TTTTTTTTTTTTTTTTTTT",
-    ],
-    npcs:[
-      {x:3,y:2,av:"👧",name:"Chi-Chi",lines:["Goku! You're really going out there?","Come back safe... and make sure Gohan studies!"]},
-      {x:8,y:6,av:"👩‍🔧",name:"Bulma",lines:["My scouter's going crazy — power levels dropping from the sky!","Two Saiyans. One's your brother. Head EAST when you're ready."]},
-      {x:12,y:8,av:"🐢",name:"Master Roshi",lines:["Remember the basics: Ki runs out. Don't spam your biggest blast.","Each attack has a purpose — pierce, burst, control. Use the right one."]},
-    ],
-    enemies:[{x:6,y:4,eid:"saibaman"}],
-    recruits:[
-      {x:4,y:3,fid:"gohan",intro:["Dad! I want to help fight too!","...Alright, Gohan. Stay close to me."]},
-      {x:13,y:6,fid:"piccolo",intro:["The Saiyans threaten my world too, Goku.","A temporary alliance, then — I'll fight beside you."]},
-    ],
-    boss:{x:16,y:4,storyIdx:0,name:"Raditz",av:"👹",intro:["So this is Earth... and you must be Kakarot's friends.","Prepare yourselves!"]},
-    exits:[{x:17,y:4,to:"wasteland",tx:1,ty:4}],
-    start:{x:2,y:4},
-  },
-  wasteland:{name:"Rocky Wasteland",hint:"The Saiyans have landed. Rest at Korin's, then push on.",
-    amb:300, music:"battle",
-    grid:[
-      "RRRRRRRRRRRRRRRRRR",
-      "<...R....RR....R..R",
-      "R..R...RR....RR...R",
-      "R....RR....R....R.R",
-      "<........RR....RR.R",
-      "R.RR...R.....R....R",
-      "R....RR...RR....R.R",
-      "R.R....R.....RR...R",
-      "R....RR..R.....R.>R",
-      "R..R.....RR..R....R",
-      "RRRRRRRRRRRRRRRRRRR",
-    ],
-    npcs:[
-      {x:4,y:6,av:"🐱",name:"Korin",heal:true,lines:["Take a Senzu Bean — you'll be good as new.","Come back any time your ki runs low."]},
-    ],
-    enemies:[{x:7,y:3,eid:"saibaman"},{x:11,y:7,eid:"saibaman"}],
-    recruits:[
-      {x:6,y:4,fid:"krillin",intro:["Goku! You didn't think I'd let you have all the fun?","Ha! Good to have you, Krillin."]},
-    ],
-    boss:{x:9,y:4,storyIdx:1,name:"Nappa",av:"👺",intro:["Hah! You're all bugs to me.","Let's see if you can even scratch me!"]},
-    boss2:{x:14,y:2,storyIdx:2,name:"Vegeta",av:"🦍",intro:["Impressive. But I am the Prince of all Saiyans.","This is where you die."]},
-    exits:[{x:0,y:1,to:"paozu",tx:16,ty:4},{x:0,y:4,to:"paozu",tx:16,ty:4},{x:17,y:8,to:"namek",tx:1,ty:5}],
-    start:{x:1,y:4},
-  },
-  namek:{name:"Namek & Beyond",hint:"Cross the stars: Frieza, Cell, and Buu await. Dende can heal you.",
-    amb:520, music:"boss",
-    grid:[
-      "TTTTTTTTTTTTTTTTTT",
-      "T..~~....RR......>T",
-      "T..~~..,,,,,,....TT",
-      "T.....,......,...RT",
-      "<..,,,,...HH..,,..T",
-      "<..,.....HH..,...RT",
-      "T..,,,......,,,,..T",
-      "T.RR..,,,,,,,..T..T",
-      "T....~~~....RR....T",
-      "T....~~~.........>T",
-      "TTTTTTTTTTTTTTTTTTT",
-    ],
-    npcs:[
-      {x:10,y:4,av:"🟩",name:"Dende",heal:true,lines:["I am Dende. Let me heal you.","The universe's strongest still stand before you. Be ready."]},
-      {x:3,y:8,av:"👴",name:"Elder Guru",lines:["Your hidden power sleeps, young one.","When all seems lost, it awakens. Trust it."]},
-    ],
-    enemies:[{x:6,y:2,eid:"saibaman"}],
-    boss:{x:8,y:2,storyIdx:3,name:"Captain Ginyu",av:"🐸",intro:["CHANGE NOW! ...ahem. The Ginyu Force never loses.","Fight!"]},
-    boss2:{x:13,y:5,storyIdx:4,name:"Frieza",av:"👾",intro:["I've destroyed a hundred planets before breakfast.","You are nothing."]},
-    boss3:{x:8,y:8,storyIdx:5,name:"Perfect Cell",av:"🪲",intro:["Welcome to the Cell Games.","Show me your desperation."]},
-    exits:[{x:0,y:4,to:"wasteland",tx:16,ty:8},{x:0,y:5,to:"wasteland",tx:16,ty:8}],
-    // Buu & Kid Buu spawn as final bosses after Cell falls
-    finalBoss:{x:15,y:2,storyIdx:6,name:"Majin Buu",av:"🍬",intro:["Buu turn you into candy!","Hee hee hee!"]},
-    finalBoss2:{x:15,y:9,storyIdx:7,name:"Kid Buu",av:"😈",intro:["...","(pure destruction incarnate)"]},
-    start:{x:1,y:5},
-  },
+  paozu:{name:"Mount Paozu",env:"forest",music:"heroic",amb:420,hint:"Goku's home. Recruit allies, shop, train, then head east.",
+    grid:mkGrid(24,14,"T",[{c:"H",x:3,y:2,w:2,h:2},{c:"~",x:3,y:10,w:3,h:2},{c:"T",x:9,y:4},{c:"T",x:16,y:9},{c:"T",x:7,y:11},{c:"R",x:14,y:3},{c:"R",x:19,y:8},{c:">",x:22,y:6}]),
+    npcs:[{x:6,y:2,av:"👧",name:"Chi-Chi",lines:["Goku! You're going out there?","Come back safe!"]},
+      {x:9,y:2,av:"👩‍🔧",name:"Bulma",role:"shop",shopName:"Capsule Corp",lines:["Stock up before you fight!"]},
+      {x:13,y:11,av:"🐢",name:"Master Roshi",lines:["Ki runs out — don't just spam your biggest blast."]},
+      {x:18,y:6,av:"🐺",name:"Yamcha",role:"train",lines:["Spar with my bots for XP and Zeni!"]}],
+    recruits:[{x:6,y:6,fid:"gohan",intro:["Dad! Let me help!","...Alright, Gohan."]},{x:15,y:4,fid:"piccolo",intro:["We share an enemy, Goku.","I'll fight beside you."]}],
+    enemies:[{x:11,y:6,eid:"saibaman"},{x:15,y:10,eid:"saibaman"},{x:8,y:8,eid:"saibaman"}],
+    boss:{x:21,y:6,storyIdx:0,name:"Raditz",av:"👹",intro:["So this is Earth...","Prepare yourselves!"]},
+    exits:[{x:22,y:6,to:"westcity",tx:2,ty:6}], start:{x:3,y:6}},
+
+  westcity:{name:"West City",env:"city",music:"town",amb:500,hint:"A bustling city. Capsule Corp HQ, shops, and the road onward.",
+    grid:mkGrid(24,14,"H",[{c:"H",x:4,y:3,w:3,h:2},{c:"H",x:15,y:8,w:3,h:2},{c:"R",x:10,y:5},{c:"R",x:18,y:4},{c:"<",x:1,y:6},{c:">",x:22,y:6},{c:">",x:12,y:1}]),
+    npcs:[{x:6,y:6,av:"👩‍🔧",name:"Bulma",role:"shop",shopName:"Capsule Corp",lines:["Welcome to HQ! Best gear in the city."]},
+      {x:17,y:5,av:"🐺",name:"Yamcha",role:"train",lines:["City gym's open — let's spar."]},
+      {x:9,y:10,av:"👴",name:"Ox-King",lines:["Take care of my daughter Chi-Chi, hero."]},
+      {x:14,y:11,av:"👩‍⚕️",name:"Nurse",role:"heal",lines:["Rest up — you look worn out."]}],
+    enemies:[{x:13,y:6,eid:"saibaman"},{x:8,y:8,eid:"saibaman"}],
+    exits:[{x:1,y:6,to:"paozu",tx:20,ty:6},{x:22,y:6,to:"wasteland",tx:2,ty:6},{x:12,y:1,to:"kamehouse",tx:10,ty:9}], start:{x:2,y:6}},
+
+  kamehouse:{name:"Kame House",env:"beach",music:"calm",amb:600,hint:"Master Roshi's island. Heal, shop, and an old friend joins.",
+    grid:mkGrid(20,12,"~",[{c:"H",x:8,y:4,w:2,h:2},{c:"T",x:4,y:3},{c:"T",x:14,y:7},{c:"<",x:10,y:10}]),
+    npcs:[{x:6,y:5,av:"🐢",name:"Master Roshi",role:"heal",lines:["Ah, a rest by the sea. Good as new!"]},
+      {x:13,y:4,av:"👱‍♀️",name:"Launch",role:"shop",shopName:"Seaside Shop",lines:["Supplies for the road, sugar."]},
+      {x:12,y:8,av:"🐢",name:"Turtle",lines:["The sea is calm today... enjoy it while it lasts."]}],
+    recruits:[{x:9,y:7,fid:"krillin",intro:["Goku! I've been training here — take me along!","Ha! Good to have you, Krillin."]}],
+    enemies:[],
+    exits:[{x:10,y:10,to:"westcity",tx:12,ty:2}], start:{x:10,y:9}},
+
+  wasteland:{name:"Rocky Wasteland",env:"desert",music:"battle",amb:300,hint:"The Saiyans' landing zone. Nappa blocks the path east.",
+    grid:mkGrid(24,14,"R",[{c:"R",x:5,y:3,w:2},{c:"R",x:10,y:8,w:2},{c:"R",x:15,y:4},{c:"R",x:18,y:10},{c:"<",x:1,y:6},{c:">",x:22,y:6}]),
+    npcs:[{x:5,y:10,av:"🐱",name:"Korin",role:"heal",lines:["Have a Senzu — good as new!"]},
+      {x:8,y:3,av:"👩‍🔧",name:"Bulma",role:"shop",shopName:"Capsule Corp",lines:["Restock before Nappa flattens you."]},
+      {x:19,y:4,av:"🐺",name:"Yamcha",role:"train",lines:["Grind a few levels — smart move."]}],
+    enemies:[{x:11,y:5,eid:"saibaman"},{x:14,y:9,eid:"saibaman"},{x:17,y:6,eid:"saibaman"},{x:10,y:11,eid:"saibaman"}],
+    boss:{x:12,y:3,storyIdx:1,name:"Nappa",av:"👺",intro:["You're all bugs to me!","Let's see you scratch me!"]},
+    exits:[{x:1,y:6,to:"westcity",tx:20,ty:6},{x:22,y:6,to:"battlefield",tx:2,ty:6}], start:{x:2,y:6}},
+
+  battlefield:{name:"Saiyan Battlefield",env:"desert",music:"boss",amb:280,hint:"Prince Vegeta awaits. This is the true test of the Saiyan saga.",
+    grid:mkGrid(24,14,"R",[{c:"R",x:7,y:4,w:2,h:2},{c:"R",x:16,y:8,w:2},{c:"R",x:12,y:3},{c:"<",x:1,y:6},{c:">",x:22,y:7}]),
+    npcs:[{x:4,y:9,av:"🐱",name:"Korin",role:"heal",lines:["Almost through the Saiyans — heal up."]},
+      {x:6,y:11,av:"🐺",name:"Yamcha",role:"train",lines:["Vegeta's no joke. Train first."]}],
+    enemies:[{x:10,y:6,eid:"saibaman"},{x:15,y:5,eid:"saibaman"},{x:18,y:10,eid:"saibaman"}],
+    boss:{x:20,y:9,storyIdx:2,name:"Vegeta",av:"🦍",intro:["I am the Prince of all Saiyans!","This is where you die."]},
+    exits:[{x:1,y:6,to:"wasteland",tx:20,ty:6},{x:22,y:7,to:"snakeway",tx:2,ty:7}], start:{x:2,y:6}},
+
+  snakeway:{name:"Snake Way",env:"space",music:"cosmic",amb:700,hint:"A million-mile road across the clouds toward Namek.",
+    grid:mkGrid(26,14,"R",[{c:"R",x:8,y:4},{c:"R",x:14,y:9},{c:"R",x:20,y:5},{c:"<",x:1,y:7},{c:">",x:24,y:7},{c:">",x:12,y:1}]),
+    npcs:[{x:6,y:7,av:"🐉",name:"Princess Snake",lines:["Stay on the path, traveler... or be lost forever."]},
+      {x:18,y:6,av:"🐺",name:"Yamcha",role:"train",lines:["Long road. Spar to pass the time."]}],
+    enemies:[{x:10,y:7,eid:"saibaman"},{x:16,y:8,eid:"saibaman"},{x:21,y:9,eid:"saibaman"}],
+    exits:[{x:1,y:7,to:"battlefield",tx:20,ty:7},{x:24,y:7,to:"namek",tx:2,ty:6},{x:12,y:1,to:"kingkai",tx:10,ty:9}], start:{x:2,y:7}},
+
+  kingkai:{name:"King Kai's Planet",env:"kai",music:"sacred",amb:640,hint:"A tiny world with heavy gravity. Train hard; grow strong.",
+    grid:mkGrid(20,12,"T",[{c:"H",x:9,y:3},{c:"T",x:4,y:7},{c:"T",x:15,y:5},{c:"<",x:10,y:10}]),
+    npcs:[{x:7,y:5,av:"🦗",name:"King Kai",role:"heal",lines:["Made it up Snake Way? Impressive.","Train under my gravity — you'll get much stronger."]},
+      {x:12,y:6,av:"🐺",name:"Yamcha",role:"train",lines:["Gravity training! Every rep counts double here."]},
+      {x:6,y:8,av:"🐒",name:"Bubbles",lines:["Ook! (Catch me for a workout.)"]}],
+    enemies:[{x:14,y:8,eid:"trainbot"}],
+    exits:[{x:10,y:10,to:"snakeway",tx:12,ty:2}], start:{x:10,y:9}},
+
+  namek:{name:"Planet Namek",env:"namek",music:"eerie",amb:520,hint:"A green alien world. The Ginyu Force guards Frieza.",
+    grid:mkGrid(24,15,"T",[{c:"~",x:3,y:2,w:2,h:2},{c:"~",x:4,y:11,w:3,h:2},{c:"H",x:10,y:6,w:2,h:2},{c:"R",x:15,y:3},{c:"R",x:6,y:5},{c:"<",x:1,y:6},{c:">",x:22,y:7}]),
+    npcs:[{x:12,y:4,av:"🟩",name:"Dende",role:"heal",lines:["I am Dende. Let me heal you."]},
+      {x:4,y:9,av:"👴",name:"Elder Guru",lines:["Your hidden power sleeps... it will awaken."]},
+      {x:16,y:2,av:"👩‍🔧",name:"Bulma",role:"shop",shopName:"Capsule Corp",lines:["Even on Namek, Capsule Corp delivers."]}],
+    enemies:[{x:9,y:4,eid:"saibaman"},{x:18,y:8,eid:"saibaman"},{x:8,y:12,eid:"saibaman"}],
+    boss:{x:8,y:3,storyIdx:3,name:"Captain Ginyu",av:"🐸",intro:["The Ginyu Force never loses!","Fight!"]},
+    exits:[{x:1,y:6,to:"snakeway",tx:22,ty:7},{x:22,y:7,to:"friezaship",tx:2,ty:6}], start:{x:2,y:6}},
+
+  friezaship:{name:"Frieza's Ship",env:"ship",music:"boss",amb:360,hint:"Cold metal corridors. The emperor of the universe waits within.",
+    grid:mkGrid(24,14,"R",[{c:"R",x:6,y:3,w:2,h:2},{c:"R",x:14,y:8,w:3},{c:"R",x:18,y:4},{c:"H",x:10,y:10,w:2},{c:"<",x:1,y:6},{c:">",x:22,y:6}]),
+    npcs:[{x:4,y:9,av:"🟩",name:"Dende",role:"heal",lines:["Be careful — his power is beyond anything."]},
+      {x:8,y:11,av:"👩‍🔧",name:"Bulma",role:"shop",shopName:"Capsule Corp",lines:["Last chance to stock Senzu!"]},
+      {x:16,y:11,av:"🐺",name:"Yamcha",role:"train",lines:["Push past your limits before you face him."]}],
+    enemies:[{x:11,y:5,eid:"saibaman"},{x:16,y:6,eid:"saibaman"}],
+    boss:{x:20,y:6,storyIdx:4,name:"Frieza",av:"👾",intro:["I've destroyed a hundred planets before breakfast.","You are nothing."]},
+    exits:[{x:1,y:6,to:"namek",tx:20,ty:7},{x:22,y:6,to:"otherworld",tx:2,ty:6}], start:{x:2,y:6}},
+
+  otherworld:{name:"Other World",env:"space",music:"cosmic",amb:720,hint:"The afterlife's crossroads. Train, heal, and choose your path.",
+    grid:mkGrid(26,14,"R",[{c:"R",x:6,y:4},{c:"R",x:20,y:9},{c:"R",x:13,y:6},{c:"<",x:1,y:6},{c:">",x:24,y:6},{c:">",x:8,y:1},{c:">",x:17,y:1}]),
+    npcs:[{x:11,y:6,av:"😇",name:"Grand Kai",role:"heal",lines:["Rest, warrior. The hardest battles lie ahead."]},
+      {x:4,y:9,av:"👩‍🔧",name:"Bulma",role:"shop",shopName:"Capsule Corp",lines:["Even the afterlife needs supplies!"]}],
+    enemies:[{x:14,y:9,eid:"trainbot"},{x:19,y:5,eid:"trainbot"}],
+    exits:[{x:1,y:6,to:"friezaship",tx:20,ty:6},{x:24,y:6,to:"cellgames",tx:2,ty:6},{x:8,y:1,to:"hyperbolic",tx:10,ty:9},{x:17,y:1,to:"lookout",tx:10,ty:9}], start:{x:2,y:6}},
+
+  hyperbolic:{name:"Hyperbolic Time Chamber",env:"voidw",music:"sacred",amb:800,hint:"A day inside is a year out. The ultimate training ground.",
+    grid:mkGrid(20,12,"T",[{c:"H",x:9,y:3},{c:"<",x:10,y:10}]),
+    npcs:[{x:7,y:6,av:"🐺",name:"Yamcha",role:"train",lines:["Time flows strangely here — every fight is worth double.","Train until you're ready for the monsters ahead."]},
+      {x:12,y:5,av:"🟩",name:"Dende",role:"heal",lines:["Recover fully. You'll need everything."]}],
+    enemies:[{x:6,y:8,eid:"trainbot"},{x:13,y:8,eid:"trainbot"}],
+    exits:[{x:10,y:10,to:"otherworld",tx:8,ty:2}], start:{x:10,y:9}},
+
+  lookout:{name:"Kami's Lookout",env:"sky",music:"calm",amb:560,hint:"A platform in the sky. Heal, shop, and gather your resolve.",
+    grid:mkGrid(20,12,"T",[{c:"H",x:8,y:3,w:3,h:2},{c:"T",x:4,y:7},{c:"<",x:10,y:10}]),
+    npcs:[{x:6,y:6,av:"🧞",name:"Mr. Popo",role:"heal",lines:["Welcome. Rest as long as you need."]},
+      {x:13,y:5,av:"👩‍🔧",name:"Bulma",role:"shop",shopName:"Capsule Corp",lines:["A shop with a view!"]},
+      {x:11,y:8,av:"🟩",name:"Dende",lines:["I am guardian now. Earth is counting on you."]}],
+    enemies:[],
+    exits:[{x:10,y:10,to:"otherworld",tx:16,ty:2}], start:{x:10,y:9}},
+
+  cellgames:{name:"Cell Games Arena",env:"arena",music:"finalboss",amb:340,hint:"The perfect being has issued his challenge. Enter the ring.",
+    grid:mkGrid(24,14,"R",[{c:"R",x:6,y:3,w:2},{c:"R",x:17,y:9,w:2},{c:"R",x:12,y:10},{c:"<",x:1,y:6},{c:">",x:22,y:6}]),
+    npcs:[{x:4,y:9,av:"🟩",name:"Dende",role:"heal",lines:["The whole world is watching. Give it everything."]},
+      {x:7,y:11,av:"🐺",name:"Yamcha",role:"train",lines:["One last spar before the Games?"]}],
+    enemies:[{x:11,y:6,eid:"trainbot"},{x:16,y:5,eid:"trainbot"}],
+    boss:{x:20,y:6,storyIdx:5,name:"Perfect Cell",av:"🪲",intro:["Welcome to the Cell Games.","Show me your desperation!"]},
+    exits:[{x:1,y:6,to:"otherworld",tx:22,ty:6},{x:22,y:6,to:"kaiworld",tx:2,ty:6}], start:{x:2,y:6}},
+
+  kaiworld:{name:"Supreme Kai's World",env:"kai",music:"sacred",amb:660,hint:"Ancient and sacred. Dark magic stirs beyond.",
+    grid:mkGrid(24,14,"T",[{c:"T",x:6,y:3},{c:"~",x:15,y:9,w:2},{c:"H",x:10,y:5,w:2},{c:"<",x:1,y:6},{c:">",x:22,y:6},{c:">",x:12,y:1}]),
+    npcs:[{x:5,y:8,av:"🧝",name:"Supreme Kai",role:"heal",lines:["Only you can stop what's coming."]},
+      {x:8,y:11,av:"👩‍🔧",name:"Bulma",role:"shop",shopName:"Capsule Corp",lines:["Stock up — this is the end game."]},
+      {x:17,y:4,av:"🐺",name:"Yamcha",role:"train",lines:["Last training grounds. Make them count."]}],
+    enemies:[{x:13,y:7,eid:"trainbot"},{x:18,y:9,eid:"trainbot"}],
+    exits:[{x:1,y:6,to:"cellgames",tx:20,ty:6},{x:22,y:6,to:"buumap",tx:2,ty:6},{x:12,y:1,to:"babidiship",tx:10,ty:9}], start:{x:2,y:6}},
+
+  babidiship:{name:"Babidi's Ship",env:"darkship",music:"eerie",amb:380,hint:"A dungeon of dark magic. Trials wait in every chamber.",
+    grid:mkGrid(20,12,"R",[{c:"R",x:6,y:4},{c:"R",x:13,y:6},{c:"H",x:9,y:3},{c:"<",x:10,y:10}]),
+    npcs:[{x:7,y:6,av:"🧙",name:"Old Witch",role:"shop",shopName:"Dark Bazaar",lines:["Rare goods... for a price."]}],
+    enemies:[{x:11,y:5,eid:"trainbot"},{x:6,y:8,eid:"trainbot"},{x:14,y:8,eid:"trainbot"}],
+    exits:[{x:10,y:10,to:"kaiworld",tx:12,ty:2}], start:{x:10,y:9}},
+
+  buumap:{name:"Buu's Domain",env:"candy",music:"finalboss",amb:420,hint:"A world remade into candy. The djinn plays among the ruins.",
+    grid:mkGrid(24,14,"T",[{c:"T",x:7,y:4},{c:"R",x:16,y:9},{c:"~",x:11,y:6,w:2},{c:"<",x:1,y:6},{c:">",x:22,y:6}]),
+    npcs:[{x:4,y:9,av:"🧝",name:"Supreme Kai",role:"heal",lines:["Buu is chaos itself. Stay sharp."]},
+      {x:7,y:11,av:"🐺",name:"Yamcha",role:"train",lines:["The very end. One more spar?"]}],
+    enemies:[{x:10,y:5,eid:"trainbot"},{x:15,y:6,eid:"trainbot"}],
+    boss:{x:20,y:6,storyIdx:6,name:"Majin Buu",av:"🍬",intro:["Buu turn you into candy!","Hee hee hee!"]},
+    exits:[{x:1,y:6,to:"kaiworld",tx:20,ty:6},{x:22,y:6,to:"worldsend",tx:2,ty:6}], start:{x:2,y:6}},
+
+  worldsend:{name:"The Source of Nothing",env:"space",music:"finalboss",amb:760,hint:"The end of everything. Pure destruction incarnate awaits.",
+    grid:mkGrid(24,14,"R",[{c:"R",x:8,y:4},{c:"R",x:16,y:9},{c:"R",x:12,y:5},{c:"<",x:1,y:6}]),
+    npcs:[{x:4,y:9,av:"🟩",name:"Dende",role:"heal",lines:["Everyone's energy is with you now. Go!"]}],
+    enemies:[{x:11,y:7,eid:"trainbot"}],
+    boss:{x:20,y:6,storyIdx:7,name:"Kid Buu",av:"😈",intro:["...","(pure destruction incarnate)"]},
+    exits:[{x:1,y:6,to:"buumap",tx:20,ty:6}], start:{x:2,y:6}},
 };
 
 const OW={ px:0,py:0, tx:2,ty:4, dir:"down", moving:false, prog:0, fromX:0,fromY:0,toX:0,toY:0,
@@ -825,7 +1040,7 @@ function loadMap(id, sx, sy){
   const s=(sx!=null)?{x:sx,y:sy}:(m.start||{x:1,y:1});
   OW.tx=s.x; OW.ty=s.y; OW.px=s.x*TILE; OW.py=s.y*TILE; OW.moving=false;
   $("#areaName").textContent=m.name; $("#areaHint").textContent=m.hint;
-  AUDIO.setAmbiance(m.amb||400); AUDIO.playMusic(m.music||"overworld");
+  AUDIO.setAmbiance(m.amb||400); AUDIO.playMusic(m.music||"heroic");
   drawPartyStrip();
 }
 function addBoss(b){ if(!b) return;
@@ -849,25 +1064,22 @@ function drawOW(){
   // when the map is smaller than the view, center it (no black bars)
   const offX=mapW<viewW?(viewW-mapW)/2:0, offY=mapH<viewH?(viewH-mapH)/2:0;
   OW.cam.x=camX-offX; OW.cam.y=camY-offY;
+  const E=ENVS[(S.map&&S.map.env)||"forest"]||ENVS.forest;
   ctx.setTransform(DPR,0,0,DPR,0,0);
   // fill the whole view with the terrain base so margins are never black
-  ctx.fillStyle=(S.mapId==="wasteland")?"#5a4a30":(S.mapId==="namek")?"#255741":"#2e5533";
-  ctx.fillRect(0,0,viewW,viewH);
+  ctx.fillStyle=E.edge||E.ground; ctx.fillRect(0,0,viewW,viewH);
   ctx.save(); ctx.translate(-camX+offX,-camY+offY); // wrong-sky#E1: save/restore around world-space draws
-  // tiles
   const x0=Math.max(0,Math.floor(camX/TILE)-1), x1=Math.min(g[0].length,Math.ceil((camX+viewW)/TILE)+1);
   const y0=Math.max(0,Math.floor(camY/TILE)-1), y1=Math.min(g.length,Math.ceil((camY+viewH)/TILE)+1);
   for(let y=y0;y<y1;y++) for(let x=x0;x<x1;x++){
     const t=g[y][x]; const px=x*TILE, py=y*TILE;
-    // base grass
-    ctx.fillStyle=(S.mapId==="wasteland")?"#6b5a3a":(S.mapId==="namek")?"#2f6b52":"#3a6b3f";
-    ctx.fillRect(px,py,TILE,TILE);
+    ctx.fillStyle=E.ground; ctx.fillRect(px,py,TILE,TILE);
     ctx.fillStyle="rgba(0,0,0,0.05)"; if((x+y)%2) ctx.fillRect(px,py,TILE,TILE);
-    if(t===","){ ctx.fillStyle=(S.mapId==="wasteland")?"#8a7550":"#b9a06a"; ctx.fillRect(px+2,py+2,TILE-4,TILE-4); }
-    else if(t==="~"){ ctx.fillStyle="#2f6fb0"; ctx.fillRect(px,py,TILE,TILE); ctx.fillStyle="rgba(255,255,255,.12)"; ctx.fillRect(px+4,py+6,TILE-8,3); }
-    else if(t==="T"){ emoji(ctx,"🌳",px,py); }
-    else if(t==="R"){ emoji(ctx,"🪨",px,py); }
-    else if(t==="H"){ ctx.fillStyle="#7a5230"; ctx.fillRect(px,py,TILE,TILE); ctx.fillStyle="#5a3a20"; ctx.fillRect(px,py,TILE,6); }
+    if(t===","){ ctx.fillStyle=E.path; ctx.fillRect(px+2,py+2,TILE-4,TILE-4); }
+    else if(t==="~"){ ctx.fillStyle=E.water; ctx.fillRect(px,py,TILE,TILE); ctx.fillStyle="rgba(255,255,255,.12)"; ctx.fillRect(px+4,py+6,TILE-8,3); }
+    else if(t==="T"){ emoji(ctx,E.solid,px,py); }
+    else if(t==="R"){ emoji(ctx,E.rock,px,py); }
+    else if(t==="H"){ ctx.fillStyle=E.bldg||"#7a5230"; ctx.fillRect(px,py,TILE,TILE); ctx.fillStyle="rgba(0,0,0,.25)"; ctx.fillRect(px,py,TILE,6); }
     else if(t===">"||t==="<"){ ctx.fillStyle="rgba(255,210,74,.25)"; ctx.fillRect(px,py,TILE,TILE);
       ctx.strokeStyle="#ffd24a"; ctx.lineWidth=2; ctx.strokeRect(px+4,py+4,TILE-8,TILE-8); emoji(ctx,"✨",px,py,0.7); }
   }
@@ -937,7 +1149,9 @@ function interactFront(){
 function interactEntity(ent){
   if(ent.type==="npc"){
     AUDIO.sfx("talk");
-    if(ent.heal){ openDialogue(ent.av,ent.name,ent.lines,()=>{ fullHeal(); drawPartyStrip(); toast("Party fully restored!"); AUDIO.sfx("win"); }); }
+    if(ent.role==="shop"){ openDialogue(ent.av,ent.name,ent.lines||["Capsule Corp, at your service!"],()=>openShop(ent.shopName||ent.name+"'s Shop")); }
+    else if(ent.role==="train"){ openDialogue(ent.av,ent.name,ent.lines||["Want to train? Let's spar!"],()=>startTraining()); }
+    else if(ent.heal||ent.role==="heal"){ openDialogue(ent.av,ent.name,ent.lines,()=>{ fullHeal(); drawPartyStrip(); toast("Party fully restored!"); AUDIO.sfx("win"); }); }
     else openDialogue(ent.av,ent.name,ent.lines);
   } else if(ent.type==="enemy"){
     AUDIO.sfx("talk");
@@ -986,10 +1200,56 @@ function toast(msg){ const t=$("#areaHint"); const prev=S.map?S.map.hint:""; t.t
 
 function drawPartyStrip(){ const box=$("#partyStrip"); box.innerHTML="";
   S.heroes.forEach(h=>{ const r=el("div","pRow");
-    r.innerHTML=`<span style="font-size:15px">${h.av}</span>
+    r.innerHTML=`<span style="font-size:15px">${h.av}</span><span style="font-size:10px;color:var(--gold)">L${h.level}</span>
       <div><div class="mini mh"><i style="width:${100*h.hp/h.maxHp}%"></i></div>
       <div class="mini mk"><i style="width:${100*h.ki/h.maxKi}%"></i></div></div>`;
-    box.appendChild(r); }); }
+    box.appendChild(r); }); updateHud(); }
+function updateHud(){ const z=$("#zeniDisp"); if(z) z.textContent="✦ "+S.zeni+" Zeni"; }
+
+/* ---------- party / skills menu ---------- */
+function openMenu(){ if(OW.dialogOpen)return; MODE="menu"; $("#menu").classList.add("show"); renderMenu(MENU_TAB); AUDIO.sfx("menu"); }
+function closeMenu(){ $("#menu").classList.remove("show"); if(!S.over)MODE="overworld"; }
+let MENU_TAB="party";
+function renderMenu(tab){ MENU_TAB=tab; $("#menuZeni").textContent="✦ "+S.zeni;
+  [...$("#menuTabs").children].forEach(b=>b.classList.toggle("on",b.dataset.tab===tab));
+  const body=$("#menuBody"); body.innerHTML="";
+  if(tab==="party"){
+    S.heroes.forEach(h=>{ const need=xpNeed(h.level); const card=el("div","mcard");
+      card.innerHTML=`<div class="top"><canvas width="88" height="88"></canvas>
+        <div style="flex:1"><span class="nm">${h.name}</span> <span class="lv">Lv ${h.level}</span>
+        <div class="xpbar"><i style="width:${h.level>=MAXLV?100:Math.floor(100*h.xp/need)}%"></i></div></div>
+        <div class="sp">${h.sp} SP</div></div>
+        <div class="stats">HP ${h.maxHp} · Ki ${h.maxKi} · ATK ${h.atk} · DEF ${h.def} · SPD ${h.spd} · Crit ${Math.round(h.crit*100)}%</div>
+        <div class="traitrow"></div>`;
+      drawChar(card.querySelector("canvas").getContext("2d"),0,0,88,h.fid);
+      const tr=card.querySelector(".traitrow");
+      TRAITS.forEach(([key,lab])=>{ const b=el("button",null,lab+" <span class='sp'>("+h.traits[key]+")</span>");
+        b.disabled=h.sp<=0; b.onclick=()=>{ if(spendTrait(h,key)){ AUDIO.sfx("menu"); renderMenu("party"); drawPartyStrip(); } }; tr.appendChild(b); });
+      body.appendChild(card); });
+  } else {
+    const owned=SHOP_STOCK.filter(id=>itemCount(id)>0);
+    if(!owned.length){ body.innerHTML='<div class="stats">No items. Buy some at a Capsule Shop.</div>'; return; }
+    owned.forEach(id=>{ const it=ITEMS[id]; const row=el("div","mcard");
+      row.innerHTML=`<div class="nm">${it.name} <span class="lv">×${itemCount(id)}</span></div><div class="stats">${it.desc}</div><div class="userow"></div>`;
+      const ur=row.querySelector(".userow");
+      const pool=(it.use==="revive")?S.heroes:S.heroes.filter(h=>h.hp>0);
+      pool.forEach(h=>{ const b=el("button",null,"Use on "+h.name);
+        b.onclick=()=>{ if(itemCount(id)>0 && applyItem(id,h)){ S.inventory[id]--; AUDIO.sfx("win"); toast(it.name+" used on "+h.name); renderMenu("items"); drawPartyStrip(); } }; ur.appendChild(b); });
+      body.appendChild(row); });
+  }
+}
+/* ---------- shop ---------- */
+function openShop(name){ MODE="shop"; $("#shopName").textContent=name||"Capsule Shop"; $("#shop").classList.add("show"); renderShop(); AUDIO.sfx("menu"); }
+function closeShop(){ $("#shop").classList.remove("show"); if(!S.over)MODE="overworld"; }
+function renderShop(){ $("#shopZeni").textContent="✦ "+S.zeni; const body=$("#shopBody"); body.innerHTML="";
+  SHOP_STOCK.forEach(id=>{ const it=ITEMS[id]; const row=el("div","shoprow");
+    row.innerHTML=`<div class="si"><div class="nm">${it.name} <span style="color:var(--dim);font-weight:normal">(have ${itemCount(id)})</span></div><div class="d">${it.desc}</div></div>
+      <div class="price">✦ ${it.price}</div><button>Buy</button>`;
+    const b=row.querySelector("button"); b.disabled=S.zeni<it.price;
+    b.onclick=()=>{ if(S.zeni>=it.price){ S.zeni-=it.price; addItem(id,1); AUDIO.sfx("win"); renderShop(); updateHud(); } };
+    body.appendChild(row); }); }
+/* ---------- training (repeatable scaled sparring) ---------- */
+function startTraining(){ const n=avgLevel()>=10?2:1; const ids=[]; for(let i=0;i<n;i++)ids.push("trainbot"); startEncounter(ids,()=>{},false); }
 
 /* =====================================================================
    BATTLE  (engine reused; ends via callback back to the overworld)
@@ -997,7 +1257,7 @@ function drawPartyStrip(){ const box=$("#partyStrip"); box.innerHTML="";
 let B=null; // battle state
 function startEncounter(enemyIds, onWin, isBoss){
   MODE="battle"; OW.dialogOpen=false; $("#dialogue").style.display="none";
-  AUDIO.playMusic(isBoss?"boss":"battle");
+  AUDIO.playMusic(isBoss?(S.storyIdx>=6?"finalboss":"boss"):"battle");
   B={ units:[], order:[], roundQueue:[], active:null, awaiting:null, pending:null, over:false,
       onWin, isBoss, enemyIds, senzu:2, log:[] };
   let idc=0;
@@ -1014,8 +1274,10 @@ function mkBattleUnit(src,side,id,eid){
     maxHp:src.maxHp||src.hp, hp:src.hp!=null?src.hp:src.hp, maxKi:src.maxKi||src.ki, ki:src.ki,
     atk:src.atk,def:src.def,spd:src.spd,pl:src.pl!=null?src.pl:src.pl,
     form:null,formMult:1,formSpd:1,debuff:0,charged:null,guarding:false,dead:false,eid,hero:(side==="ally"?src:null)};
-  if(side==="ally"){ u.maxHp=src.maxHp; u.hp=src.hp; u.maxKi=src.maxKi; u.ki=src.ki; u.pl=src.pl; u.fid=src.fid; u.spr=src.fid; }
-  else { u.maxHp=src.hp; u.hp=src.hp; u.maxKi=src.ki; u.ki=src.ki; u.pl=src.pl; u.spr=eid; }
+  if(side==="ally"){ u.maxHp=src.maxHp; u.hp=src.hp; u.maxKi=src.maxKi; u.ki=src.ki; u.pl=src.pl; u.fid=src.fid; u.spr=src.fid; u.kiMult=src.kiMult||1; u.crit=src.crit||0.12; }
+  else { let sc=1; if(src.trash){ sc=1+0.07*(avgLevel()-1); } // trash scales with party so grinding stays relevant
+    u.maxHp=Math.round(src.hp*sc); u.hp=u.maxHp; u.maxKi=src.ki; u.ki=src.ki; u.atk=Math.round(src.atk*sc); u.def=Math.round(src.def*sc);
+    u.pl=(typeof src.pl==="bigint"?src.pl:BigInt(src.pl))*BigInt(Math.round(sc*100))/100n; u.spr=eid; u.kiMult=1; u.crit=0.12; }
   return u;
 }
 function livingAllies(){ return B.units.filter(u=>u.side==="ally"&&!u.dead); }
@@ -1026,7 +1288,7 @@ function computeDamage(atk,tgt,move){
   const acc=0.96-(atk.debuff>0?0.35:0); if(!chance(acc)) return {miss:true};
   const pierce=move.pierce||0; const effDef=tgt.def*(1-pierce); const K=1.4;
   let raw=power-effDef*K; raw=Math.max(power*0.18,raw); raw*=0.9+rng()*0.2;
-  let crit=false; if(chance(0.12)){ crit=true; raw*=1.7; }
+  let crit=false; if(chance(atk.crit||0.12)){ crit=true; raw*=1.7; }
   if(!move.ignoreCap){ const cap=tgt.maxHp*0.34; if(raw>cap) raw=cap; }
   return {dmg:Math.max(1,Math.floor(raw)),crit,pierced:pierce>=0.7};
 }
@@ -1091,13 +1353,32 @@ function promptPlayer(u){ $("#hud").classList.add("show"); $("#prompt").textCont
 function buildActionButtons(u){ const box=$("#actions"); box.innerHTML="";
   const list=FIGHTERS[u.fid].moves.slice().filter(mid=>{ const m=MOVES[mid];
     if(m.kind==="xform"){ if(!xformUnlocked()) return false; if(mid==="latent"&&S.storyIdx<4) return false; } return true; });
-  list.push("__guard__");
-  for(const mid of list){ const m=mid==="__guard__"?GUARD:MOVES[mid];
+  list.push("__guard__"); list.push("__items__");
+  for(const mid of list){
+    if(mid==="__items__"){ const owned=SHOP_STOCK.reduce((s,id)=>s+itemCount(id),0);
+      const b=el("button","btn k"); b.innerHTML=`<span>Items</span><small>${owned} held</small>`;
+      b.disabled=owned<=0; b.onclick=()=>openBattleItems(u); box.appendChild(b); continue; }
+    const m=mid==="__guard__"?GUARD:MOVES[mid];
     const b=el("button","btn "+(m.kind==="atk"||m.kind==="xform"?"":"k"));
     let label=m.name; if(mid===u.form) label="Revert "+m.name;
-    b.innerHTML=`<span>${label}</span>`+(m.ki?`<span class="cost">◈ ${m.ki} ki</span>`:``)+
+    const c=costOf(u,m);
+    b.innerHTML=`<span>${label}</span>`+(c?`<span class="cost">◈ ${c} ki</span>`:``)+
       `<small>${m.kind==="xform"?(mid===u.form?"turn off":"transform"):(m.axis||"")}</small>`;
-    b.disabled=!(u.ki>=(m.ki||0) && !(m.kind==="item"&&B.senzu<=0)); b.onclick=()=>chooseMove(u,mid,m); box.appendChild(b); } }
+    b.disabled=!(u.ki>=c && !(m.kind==="item"&&B.senzu<=0)); b.onclick=()=>chooseMove(u,mid,m); box.appendChild(b); } }
+function openBattleItems(u){ const box=$("#actions"); box.innerHTML=""; $("#prompt").textContent="Use an item";
+  SHOP_STOCK.forEach(id=>{ const n=itemCount(id); if(n<=0)return; const it=ITEMS[id];
+    const b=el("button","btn k"); b.innerHTML=`<span>${it.name}</span><small>×${n} · ${it.desc}</small>`;
+    b.onclick=()=>{ const allies=livingAllies().concat(B.units.filter(x=>x.side==="ally"&&x.dead&&ITEMS[id].use==="revive"));
+      const pool=(ITEMS[id].use==="revive")?B.units.filter(x=>x.side==="ally"):livingAllies();
+      if(pool.length<=1){ useBattleItem(u,id,pool[0]); } else { B.pending={itemId:id}; B.awaiting="target-item"; $("#prompt").textContent=`${it.name} — choose an ally`; enableItemTargets(id); } };
+    box.appendChild(b); });
+  const back=el("button","btn"); back.innerHTML="<span>◀ Back</span>"; back.onclick=()=>{ $("#prompt").textContent=`${u.name}'s turn — choose an action`; buildActionButtons(u); }; box.appendChild(back); }
+function enableItemTargets(id){ const revive=ITEMS[id].use==="revive";
+  B.units.forEach(x=>{ if(x.side==="ally"&&(revive||!x.dead)){ x.el.style.cursor="crosshair"; x.el.classList.add("foeglow"); x.el.onclick=()=>{ if(B.awaiting!=="target-item")return; clearTargets(); useBattleItem(B.active,id,x); }; } }); }
+function useBattleItem(u,id,t){ if(!t||itemCount(id)<=0){ return endPlayerAction(u); }
+  const was=t.dead; if(applyItem(id,t)){ S.inventory[id]--; if(was&&ITEMS[id].use==="revive")t.dead=false; updateBars(t);
+    floatText(t, ITEMS[id].use==="ki"?"+KI":"+HP","heal"); AUDIO.sfx("win"); logB(`<b>${u.name}</b> uses <b>${ITEMS[id].name}</b> on <b>${t.name}</b>.`); }
+  endPlayerAction(u); }
 function xformUnlocked(){ return S.storyIdx>=2; } // transformations awaken after the Saiyan saga
 function chooseMove(u,mid,m){ if(B.awaiting!=="action")return; AUDIO.sfx("menu");
   if(m.kind==="xform"){ toggleForm(u,mid); return endPlayerAction(u); }
@@ -1145,7 +1426,7 @@ function playAttackCutscene(attacker,target,move,crit){
     timers.push(setTimeout(finish,1200));
   });
 }
-async function doAttack(u,t,mid,m){ if(m.ki)u.ki-=m.ki; actFx(u); updateBars(u);
+async function doAttack(u,t,mid,m){ const _c=costOf(u,m); if(_c)u.ki-=_c; actFx(u); updateBars(u);
   if(m.sfx)AUDIO.sfx(m.sfx);
   if(m.slow){ logB(`<b>${u.name}</b> charges <span class="k">${m.name}</span>...`); await wait(360); } else await wait(150);
   const r=computeDamage(u,t,m);
@@ -1159,8 +1440,8 @@ async function doAttack(u,t,mid,m){ if(m.ki)u.ki-=m.ki; actFx(u); updateBars(u);
   if(t.hp<=0) await faint(t); else checkPhase(t); }
 function applyDamage(t,d){ t.hp=Math.max(0,t.hp-d); updateBars(t); }
 function doGuard(u){ u.guarding=true; u.ki=Math.min(u.maxKi,u.ki+GUARD.regen); updateBars(u); actFx(u); logB(`<b>${u.name}</b> guards — ki restored.`); }
-function doHeal(u,t,m){ if(m.ki)u.ki-=m.ki; const h=Math.floor(t.maxHp*m.heal); t.hp=Math.min(t.maxHp,t.hp+h); updateBars(u);updateBars(t); floatText(t,"+"+h,"heal"); logB(`<b>${u.name}</b> regenerates <span class="g">${h}</span> HP.`); }
-function doDebuff(u,t,m){ if(m.ki)u.ki-=m.ki; t.debuff=2; updateBars(u); actFx(u); whiteFlash(.7); floatText(t,"BLIND","miss"); logB(`<b>${u.name}</b> blinds <b>${t.name}</b> — accuracy & speed down!`); }
+function doHeal(u,t,m){ const _c=costOf(u,m); if(_c)u.ki-=_c; const h=Math.floor(t.maxHp*m.heal); t.hp=Math.min(t.maxHp,t.hp+h); updateBars(u);updateBars(t); floatText(t,"+"+h,"heal"); logB(`<b>${u.name}</b> regenerates <span class="g">${h}</span> HP.`); }
+function doDebuff(u,t,m){ const _c=costOf(u,m); if(_c)u.ki-=_c; t.debuff=2; updateBars(u); actFx(u); whiteFlash(.7); floatText(t,"BLIND","miss"); logB(`<b>${u.name}</b> blinds <b>${t.name}</b> — accuracy & speed down!`); }
 function doSenzu(u,t){ B.senzu--; const wasDead=t.dead; t.dead=false; t.hp=t.maxHp; t.ki=Math.min(t.maxKi,t.ki+40); updateBars(t); floatText(t,"REVIVE","heal"); whiteFlash(.6); AUDIO.sfx("win"); logB(`<b>${u.name}</b> tosses a Senzu — <b>${t.name}</b> ${wasDead?"revives":"restored"} to full! (${B.senzu} left)`); }
 function toggleForm(u,mid){ if(u.form===mid){ setForm(u,null); logB(`<b>${u.name}</b> powers down.`); }
   else { setForm(u,mid); const m=MOVES[mid]; whiteFlash(.85); shake(); AUDIO.sfx("transform"); logB(`<b class="g">${u.name} transforms — ${m.name}!</b> ×${m.mult} power.`); } updateBars(u); }
@@ -1203,16 +1484,33 @@ function afterEnemy(e){ $("#hud").classList.remove("show"); setTimeout(()=>advan
 function checkEnd(){ if(B.over)return true;
   if(!livingAllies().length){ B.over=true; endBattle(false); return true; }
   if(!livingEnemies().length){ B.over=true; endBattle(true); return true; } return false; }
+const REWARD={ saibaman:{xp:24,zeni:14}, trainbot:{xp:0,zeni:0}, raditz:{xp:70,zeni:45}, nappa:{xp:110,zeni:70},
+  vegeta_s:{xp:180,zeni:130}, ginyu:{xp:280,zeni:200}, frieza:{xp:640,zeni:520}, cell:{xp:950,zeni:720},
+  buu:{xp:1300,zeni:900}, kidbuu:{xp:1750,zeni:1300} };
+function computeRewards(enemyIds){ let xp=0,zeni=0; const drops=[];
+  enemyIds.forEach(eid=>{ const r=REWARD[eid]||{xp:20,zeni:10};
+    if(eid==="trainbot"){ xp+=Math.round(28*avgLevel()); zeni+=Math.round(14*avgLevel()); }
+    else { xp+=r.xp; zeni+=r.zeni; }
+    if(ENEMIES[eid]&&ENEMIES[eid].trash){ if(chance(0.35))drops.push("hcap"); if(chance(0.12))drops.push("kcap"); }
+    if(chance(0.06))drops.push("senzu"); });
+  return {xp,zeni,drops}; }
 function endBattle(won){
   // write battle HP/ki back to persistent heroes
   B.units.filter(u=>u.side==="ally").forEach(u=>{ if(u.hero){ u.hero.hp=Math.max(0,u.hp); u.hero.ki=u.ki; } });
   setTimeout(()=>{
     $("#screen-battle").classList.remove("show"); $("#hud").classList.remove("show");
-    if(won){ AUDIO.sfx("win"); const cb=B.onWin; healParty(0.15); MODE="overworld"; $("#overworld").style.display="block";
-      AUDIO.playMusic(S.map.music||"overworld"); drawPartyStrip(); if(cb) cb(); }
+    if(won){ AUDIO.sfx("win"); const cb=B.onWin;
+      // rewards: XP to every party member, Zeni, item drops (loot-pity#E2: fixed chances, no decay pool)
+      const rw=computeRewards(B.enemyIds); S.zeni+=rw.zeni; rw.drops.forEach(id=>addItem(id,1));
+      const ups=[]; S.heroes.forEach(h=>{ if(gainXP(h,rw.xp)) ups.push(h.name+" → Lv"+h.level); });
+      healParty(0.12); MODE="overworld"; $("#overworld").style.display="block";
+      AUDIO.playMusic(S.map.music||"heroic"); drawPartyStrip(); updateHud();
+      let msg=`+${rw.xp} XP · +${rw.zeni} Zeni`; if(rw.drops.length)msg+=" · found "+rw.drops.map(d=>ITEMS[d].name).join(", ");
+      toast(msg); if(ups.length) setTimeout(()=>{ AUDIO.sfx("win"); toast("LEVEL UP! "+ups.join(", ")); },1600);
+      if(cb) cb(); }
     else { // defeat: revive at Korin-less penalty, back to world
       AUDIO.sfx("down"); S.heroes.forEach(h=>{ h.hp=Math.max(1,Math.round(h.maxHp*0.4)); }); MODE="overworld";
-      $("#overworld").style.display="block"; AUDIO.playMusic(S.map.music||"overworld"); drawPartyStrip();
+      $("#overworld").style.display="block"; AUDIO.playMusic(S.map.music||"heroic"); drawPartyStrip();
       toast("Your team was overwhelmed — regroup and heal!"); }
   }, 700);
 }
@@ -1234,6 +1532,7 @@ function enterWorld(){
   // join automatically as the story advances.
   S.storyIdx=0; S.over=false; S.cleared=new Set(); S.recruited=new Set(["goku"]);
   S.heroes=[makeHero("goku")]; S.party=["goku"];
+  S.zeni=0; S.inventory={hcap:1};
   MODE="overworld"; show("overworld");
   OW.canvas=$("#owCanvas"); OW.ctx=OW.canvas.getContext("2d"); resizeCanvas();
   loadMap("paozu");
@@ -1257,8 +1556,12 @@ function togglePick(id,c){ const i=S.party.indexOf(id);
 /* wiring */
 $("#toRoster").onclick=()=>{ AUDIO.gesture(); AUDIO.sfx("win"); enterWorld(); };  // straight into the story — no team select
 $("#soundBtn").onclick=()=>{ AUDIO.gesture(); const on=AUDIO.toggle(); $("#soundBtn").textContent=on?"🔊":"🔇"; };
-$("#btnA").onclick=()=>{ AUDIO.gesture(); if(OW.dialogOpen){ if(OW.advance)OW.advance(); } else interactFront(); };
-$("#btnB").onclick=()=>{ AUDIO.gesture(); if(OW.dialogOpen){ if(OW.advance)OW.advance(); } };
+$("#menuBtn").onclick=()=>{ AUDIO.gesture(); if(MODE==="menu")closeMenu(); else if(MODE==="overworld")openMenu(); };
+$("#menuClose").onclick=closeMenu;
+$("#menuTabs").addEventListener("click",e=>{ const b=e.target.closest("button"); if(b){ AUDIO.sfx("menu"); renderMenu(b.dataset.tab); } });
+$("#shopClose").onclick=closeShop;
+$("#btnA").onclick=()=>{ AUDIO.gesture(); if(MODE==="menu"||MODE==="shop")return; if(OW.dialogOpen){ if(OW.advance)OW.advance(); } else interactFront(); };
+$("#btnB").onclick=()=>{ AUDIO.gesture(); if(OW.dialogOpen){ if(OW.advance)OW.advance(); } else if(MODE==="menu")closeMenu(); else if(MODE==="overworld")openMenu(); };
 // dpad (press & hold)
 document.querySelectorAll("#dpad button").forEach(b=>{
   const dir=b.dataset.dir;
@@ -1277,8 +1580,11 @@ document.addEventListener("keydown",e=>{
   if(MODE==="battle"&&B&&B.awaiting==="action"){ const btns=[...$("#actions").querySelectorAll(".btn")];
     if(/^[1-9]$/.test(e.key)){ const b=btns[+e.key-1]; if(b&&!b.disabled)b.click(); } return; }
   if(MODE==="dialogue"){ if(e.key===" "||e.key==="Enter"||e.key==="e"||e.key==="E"){ e.preventDefault(); if(OW.advance)OW.advance(); } return; }
+  if(MODE==="menu"){ if(e.key==="Escape"||e.key==="m"||e.key==="M"){ e.preventDefault(); closeMenu(); } return; }
+  if(MODE==="shop"){ if(e.key==="Escape"){ e.preventDefault(); closeShop(); } return; }
   if(MODE==="overworld"){
     if(KEYDIR[e.key]){ e.preventDefault(); OW.hold=KEYDIR[e.key]; tryMove(KEYDIR[e.key]); }
+    else if(e.key==="m"||e.key==="M"){ e.preventDefault(); openMenu(); }
     else if(e.key===" "||e.key==="Enter"||e.key==="e"||e.key==="E"){ e.preventDefault(); interactFront(); }
   }
 });
@@ -1288,7 +1594,7 @@ window.addEventListener("resize",()=>{ if(OW.canvas) resizeCanvas(); });
 // init sound button glyph
 $("#soundBtn").textContent=AUDIO.isOn()?"🔊":"🔇";
 // lightweight debug hook (state inspection; harmless in normal play)
-window.__G={ get MODE(){return MODE}, OW, S, tryMove, interactFront, AUDIO };
+window.__G={ get MODE(){return MODE}, OW, S, tryMove, interactFront, AUDIO, MAPS, tileAt, solidTile, loadMap, ENEMIES, ITEMS };
 show("screen-title");
 </script>
 </body>

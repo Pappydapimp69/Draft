@@ -1,0 +1,869 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Dragon Ball Z — Saga Warriors</title>
+<style>
+  :root{
+    --bg:#0a0e1a; --panel:#121a2e; --panel2:#1b2540; --ink:#eaf0ff; --dim:#8fa2c9;
+    --orange:#ff8a1e; --orange2:#ffb347; --ki:#4fc3ff; --ki2:#7fe0ff;
+    --hp:#37d67a; --hp2:#8affb6; --danger:#ff4d5e; --gold:#ffd24a; --purple:#b07bff;
+    --line:#26324f;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:radial-gradient(1200px 700px at 50% -10%,#16223f 0%,var(--bg) 60%);
+    color:var(--ink);font-family:"Trebuchet MS",Segoe UI,system-ui,sans-serif;
+    -webkit-user-select:none;user-select:none;overflow:hidden;
+  }
+  #app{max-width:960px;margin:0 auto;height:100%;display:flex;flex-direction:column;position:relative}
+  .stage{flex:1;position:relative;overflow:hidden}
+  .shake{animation:shake .28s linear}
+  @keyframes shake{0%,100%{transform:translate(0,0)}20%{transform:translate(-8px,3px)}
+    40%{transform:translate(7px,-4px)}60%{transform:translate(-5px,5px)}80%{transform:translate(4px,-2px)}}
+
+  /* ---- title / cards ---- */
+  .screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;text-align:center;padding:24px;gap:16px;
+    background:radial-gradient(900px 500px at 50% 20%,#1a2848,#0a0e1a 70%);z-index:20}
+  h1{font-size:clamp(30px,7vw,58px);margin:0;letter-spacing:2px;line-height:1;
+    background:linear-gradient(180deg,var(--orange2),var(--orange) 55%,#c85a00);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    text-shadow:0 4px 22px rgba(255,138,30,.35);font-style:italic}
+  .sub{color:var(--dim);letter-spacing:6px;font-size:13px;text-transform:uppercase}
+  .btn{cursor:pointer;border:1px solid var(--line);background:linear-gradient(180deg,var(--panel2),var(--panel));
+    color:var(--ink);padding:12px 18px;border-radius:12px;font-size:15px;font-weight:bold;
+    transition:transform .08s,box-shadow .15s,border-color .15s;min-width:0}
+  .btn:hover{transform:translateY(-2px);border-color:var(--orange);box-shadow:0 6px 20px rgba(255,138,30,.25)}
+  .btn:active{transform:translateY(0)}
+  .btn.k{border-color:#2b4e6e}.btn.k:hover{border-color:var(--ki);box-shadow:0 6px 20px rgba(79,195,255,.25)}
+  .btn:disabled{opacity:.35;cursor:not-allowed;transform:none;box-shadow:none;border-color:var(--line)}
+  .pick{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;max-width:760px}
+  .hero{width:150px;border:1px solid var(--line);border-radius:14px;padding:12px;cursor:pointer;
+    background:var(--panel);transition:.15s;position:relative}
+  .hero:hover{border-color:var(--orange);transform:translateY(-3px)}
+  .hero.on{border-color:var(--gold);box-shadow:0 0 0 2px rgba(255,210,74,.4) inset}
+  .hero .av{font-size:44px}
+  .hero .nm{font-weight:bold;margin-top:4px}
+  .hero .role{color:var(--dim);font-size:11px;text-transform:uppercase;letter-spacing:1px}
+  .hero .st{font-size:11px;color:var(--dim);margin-top:6px;line-height:1.5;text-align:left}
+  .lede{max-width:640px;color:var(--dim);line-height:1.6;font-size:14px}
+  .saga-card h2{font-size:clamp(22px,5vw,34px);margin:.2em 0;font-style:italic}
+  .tag{display:inline-block;padding:3px 10px;border:1px solid var(--line);border-radius:20px;
+    font-size:11px;color:var(--dim);letter-spacing:1px;text-transform:uppercase}
+
+  /* ---- battle field ---- */
+  .field{position:absolute;inset:0;display:flex;flex-direction:column}
+  .arena{flex:1;position:relative;
+    background:linear-gradient(180deg,#101a33 0%,#0c1428 55%,#0a1120 100%);overflow:hidden}
+  .ground{position:absolute;left:0;right:0;bottom:0;height:32%;
+    background:linear-gradient(180deg,#243a2a,#152417);border-top:2px solid #2f5a38;
+    box-shadow:0 -18px 40px rgba(0,0,0,.4) inset}
+  .row{position:absolute;left:0;right:0;display:flex;justify-content:space-around;padding:0 4%}
+  .enemies{top:6%}.allies{bottom:14%}
+  .unit{position:relative;display:flex;flex-direction:column;align-items:center;width:30%;max-width:150px;
+    transition:transform .12s}
+  .unit.dead{opacity:.28;filter:grayscale(1) brightness(.6)}
+  .avatar{font-size:clamp(34px,9vw,64px);line-height:1;position:relative;transition:transform .12s,filter .2s;
+    filter:drop-shadow(0 6px 8px rgba(0,0,0,.5))}
+  .aura{position:absolute;inset:-18% -22%;border-radius:50%;z-index:-1;opacity:0;transition:opacity .25s;
+    background:radial-gradient(circle,var(--au,transparent) 0%,transparent 70%);filter:blur(4px)}
+  .unit.charged .aura{opacity:.9;animation:pulse 1s ease-in-out infinite}
+  @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+  .unit.act .avatar{transform:translateY(-10px) scale(1.08)}
+  .unit.hit .avatar{animation:hitflash .3s}
+  @keyframes hitflash{0%,100%{filter:none}30%{filter:brightness(3) drop-shadow(0 0 12px #fff)}}
+  .nameplate{margin-top:6px;width:100%;font-size:12px}
+  .nameplate .n{font-weight:bold;display:flex;justify-content:space-between;gap:6px;align-items:baseline}
+  .nameplate .form{color:var(--gold);font-size:10px;font-style:italic}
+  .bar{height:8px;border-radius:6px;background:#0a1020;overflow:hidden;margin-top:3px;border:1px solid #0c1526}
+  .bar>i{display:block;height:100%;transition:width .35s ease}
+  .bar.h>i{background:linear-gradient(90deg,var(--hp),var(--hp2))}
+  .bar.k>i{background:linear-gradient(90deg,var(--ki),var(--ki2))}
+  .pl{font-size:10px;color:var(--dim);margin-top:2px;letter-spacing:.5px}
+
+  .float{position:absolute;font-weight:900;font-size:22px;pointer-events:none;z-index:9;
+    text-shadow:0 2px 6px #000;animation:rise 1s ease-out forwards}
+  .float.dmg{color:#fff}.float.crit{color:var(--gold);font-size:30px}
+  .float.heal{color:var(--hp2)}.float.miss{color:var(--dim);font-style:italic}
+  .float.pierce{color:var(--ki2)}
+  @keyframes rise{0%{transform:translateY(0) scale(.6);opacity:0}
+    18%{transform:translateY(-14px) scale(1.15);opacity:1}100%{transform:translateY(-58px) scale(1);opacity:0}}
+  .beam{position:absolute;height:10px;border-radius:8px;z-index:8;transform-origin:left center;
+    background:linear-gradient(90deg,rgba(127,224,255,0),var(--bc,#7fe0ff));
+    box-shadow:0 0 18px var(--bc,#7fe0ff);opacity:0}
+  .flashwhite{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:15}
+
+  /* ---- HUD ---- */
+  .hud{background:linear-gradient(180deg,#0e1526,#0a0f1e);border-top:1px solid var(--line);
+    padding:8px 10px 10px;min-height:150px;display:flex;flex-direction:column;gap:8px}
+  .log{height:52px;overflow:hidden;font-size:12.5px;color:var(--dim);line-height:1.45;
+    display:flex;flex-direction:column-reverse}
+  .log b{color:var(--ink)}.log .g{color:var(--gold)}.log .r{color:var(--danger)}.log .k{color:var(--ki2)}
+  .turnbar{display:flex;gap:5px;align-items:center;font-size:11px;color:var(--dim);flex-wrap:wrap}
+  .chip{padding:2px 8px;border-radius:20px;border:1px solid var(--line);background:#0e1730;font-size:11px}
+  .chip.now{border-color:var(--orange);color:var(--orange2);font-weight:bold}
+  .chip.foe{color:#ff9aa4}
+  .actions{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+  .actions .btn{padding:10px 6px;font-size:13px;display:flex;flex-direction:column;gap:2px;align-items:center;line-height:1.1}
+  .actions .btn small{font-weight:normal;font-size:10px;color:var(--dim)}
+  .actions .btn .cost{color:var(--ki2);font-size:10px}
+  .prompt{font-size:13px;color:var(--orange2);font-weight:bold;text-align:center;min-height:16px}
+  .backbtn{align-self:flex-start;font-size:12px;padding:6px 10px}
+  .hidden{display:none!important}
+  .fade{animation:fade .4s}@keyframes fade{from{opacity:0}to{opacity:1}}
+  .foeglow{--au:var(--danger)}
+  @media(max-width:520px){.actions .btn{font-size:12px}.hero{width:132px}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="stage" id="stage">
+    <!-- TITLE -->
+    <div class="screen" id="screen-title">
+      <div class="sub">A turn-based tribute</div>
+      <h1>DRAGON BALL Z<br>SAGA&nbsp;WARRIORS</h1>
+      <p class="lede">Four sagas. Rising power levels. Ki that actually runs out.<br>
+        Assemble three Z-Fighters and fight from Raditz to Kid Buu.</p>
+      <button class="btn" id="toRoster">▶ Begin</button>
+      <p class="lede" style="font-size:12px;opacity:.7">Built with the Brain cognitive system — combat rules
+        composed from prior verified lessons. Tip: Ki is shared across a whole fight; transformations trade sustain for power.</p>
+    </div>
+
+    <!-- ROSTER -->
+    <div class="screen hidden" id="screen-roster">
+      <div class="sub">Choose your team</div>
+      <h1 style="font-size:34px">PICK 3 FIGHTERS</h1>
+      <div class="pick" id="pick"></div>
+      <div class="prompt" id="pickHint">Select 3 warriors</div>
+      <button class="btn" id="startGame" disabled>Power Up ▶</button>
+    </div>
+
+    <!-- SAGA INTRO -->
+    <div class="screen hidden saga-card" id="screen-saga">
+      <span class="tag" id="sagaTag">Saga</span>
+      <h2 id="sagaTitle"></h2>
+      <p class="lede" id="sagaText"></p>
+      <div id="sagaUnlock" class="lede" style="color:var(--gold)"></div>
+      <button class="btn" id="sagaGo">Fight ▶</button>
+    </div>
+
+    <!-- BATTLE -->
+    <div class="field hidden" id="screen-battle">
+      <div class="arena" id="arena">
+        <div class="ground"></div>
+        <div class="row enemies" id="rowEnemies"></div>
+        <div class="row allies" id="rowAllies"></div>
+        <div class="flashwhite" id="flash"></div>
+      </div>
+    </div>
+
+    <!-- RESULT -->
+    <div class="screen hidden" id="screen-result">
+      <h1 id="resultTitle"></h1>
+      <p class="lede" id="resultText"></p>
+      <button class="btn" id="resultBtn"></button>
+    </div>
+  </div>
+
+  <!-- HUD (only during battle) -->
+  <div class="hud hidden" id="hud">
+    <div class="turnbar" id="turnbar"></div>
+    <div class="log" id="log"></div>
+    <div class="prompt" id="prompt"></div>
+    <div class="actions" id="actions"></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* =====================================================================
+   DRAGON BALL Z — SAGA WARRIORS
+   A self-contained turn-based RPG. No external assets or network.
+
+   Design rules are COMPOSED FROM Brain's verified memory (reference data,
+   never executed — just applied). Key ones, cited where they land:
+   - sandbox-dbz-combat#E2  Pareto-diverse moves: each leads ONE orthogonal
+     axis (burst / pierce / cap-ignore / control / AOE) and pays on another,
+     so no single move dominates.
+   - sandbox-dbz-combat#E4  Ki is a PERSISTENT pool across the whole fight
+     (not refilled per turn); powered moves priced to beat basic DPS but not
+     be spammable; transform drains scale so cost keeps binding.
+   - sandbox-dbz-team-combat#E2/E3  DEFENSE is wired into the damage formula
+     as PRE-cap mitigation (a modeled-but-unused stat does nothing).
+   - sandbox-dbz-team-combat#E1  %maxHP damage cap keeps boss fights fair,
+     but would punish tanks — so defense is subtracted BEFORE the cap and
+     some moves bypass the cap on purpose.
+   - sandbox-dbz-team-combat#E5  Speed ties get a symmetric jitter, not a
+     stable-sort order (stable sort skewed win-rate ~62/38).
+   - sandbox-power-scaling#E1  Canonical power levels cross 2^53; they are
+     BigInt DISPLAY values. Combat math runs on small scaled stats.
+   - sandbox-combined-loop-combat#E1  Damage is floored ONCE, at the HP-write
+     boundary (quantize at the boundary, not throughout).
+   - sandbox-dbz-combat#E3  The "no valid target / all fainted" case is
+     handled explicitly, never left to a sentinel.
+   ===================================================================== */
+
+/* ---------- deterministic RNG (seeded; reproducible runs) ---------- */
+let _seed = 0x9e3779b9 ^ 0xC0FFEE;
+function rng(){ // mulberry32
+  _seed |= 0; _seed = _seed + 0x6D2B79F5 | 0;
+  let t = Math.imul(_seed ^ _seed >>> 15, 1 | _seed);
+  t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+  return ((t ^ t >>> 14) >>> 0) / 4294967296;
+}
+const rint = (a,b)=> a + Math.floor(rng()*(b-a+1));
+const chance = p => rng() < p;
+
+/* ---------- power-level display (BigInt-safe, per power-scaling#E1) ---------- */
+function fmtPower(n){
+  const b = BigInt(n); const s = b.toString();
+  // group with commas without touching Number precision
+  return s.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+/* ---------- fighters ---------- */
+// stats are GAMEPLAY-SCALED (safe number range). `pl` is canonical flavor only.
+const FIGHTERS = {
+  goku:   {name:"Goku",   av:"🥋", role:"All-rounder", au:"#ffcf6b",
+    hp:520, ki:120, atk:62, def:34, spd:46, pl:8000,
+    moves:["punch","kamehameha","kaioken","solar"], xform:"kaioken",
+    bio:"Balanced. Kaioken multiplies power but burns HP and ki each turn."},
+  vegeta: {name:"Vegeta", av:"🧑‍🚀", role:"Glass cannon", au:"#8ab6ff",
+    hp:440, ki:130, atk:74, def:26, spd:52, pl:18000,
+    moves:["punch","galick","bigbang","ssj"], xform:"ssj",
+    bio:"Highest attack, thin defense. Super Saiyan for raw multiplier."},
+  piccolo:{name:"Piccolo",av:"👽", role:"Pierce / control", au:"#7fe0c0",
+    hp:560, ki:100, atk:54, def:40, spd:40, pl:3500,
+    moves:["punch","special","masenko_p","regen"], xform:null,
+    bio:"Special Beam pierces defense. Regenerates HP. Great vs tanks."},
+  gohan:  {name:"Gohan",  av:"🧒", role:"Latent burst", au:"#c9a2ff",
+    hp:500, ki:110, atk:58, def:32, spd:44, pl:1500,
+    moves:["punch","masenko","kamehameha","latent"], xform:"latent",
+    bio:"Hidden power. When cornered, Latent Awakening spikes damage hard."},
+  krillin:{name:"Krillin",av:"👨‍🦲", role:"Utility / execute", au:"#ffd24a",
+    hp:460, ki:110, atk:48, def:30, spd:50, pl:1770,
+    moves:["punch","destructo","solar","senzu_toss"], xform:null,
+    bio:"Destructo Disc ignores the damage cap — a true tank-killer. Brings Senzu."},
+};
+
+/* ---------- moves ----------
+   Each move leads exactly one orthogonal axis (dbz-combat#E2). */
+const MOVES = {
+  punch:   {name:"Rush",           kind:"atk", ki:0,  rate:1.0, tgt:"one", axis:"free sustain",
+            desc:"Melee combo. No ki. Regens a little ki.", regen:8},
+  kamehameha:{name:"Kamehameha",   kind:"atk", ki:34, rate:2.7, tgt:"one", slow:true, beam:"#7fe0ff", axis:"burst",
+            desc:"Huge single-target beam. Slow — strikes late in the round."},
+  galick:  {name:"Galick Gun",     kind:"atk", ki:30, rate:2.5, tgt:"one", slow:true, beam:"#b07bff", axis:"burst",
+            desc:"Vegeta's signature purple beam."},
+  bigbang: {name:"Big Bang",       kind:"atk", ki:44, rate:3.1, tgt:"one", slow:true, beam:"#ffd24a", axis:"nuke burst",
+            desc:"Explosive single hit. Very costly."},
+  special: {name:"Special Beam",   kind:"atk", ki:26, rate:1.9, tgt:"one", pierce:0.7, beam:"#e0b0ff", axis:"armor pierce",
+            desc:"Drill beam. Ignores 70% of enemy defense."},
+  destructo:{name:"Destructo Disc",kind:"atk", ki:30, rate:1.5, tgt:"one", pierce:1, ignoreCap:true, beam:"#ffe57a", axis:"cap-ignore",
+            desc:"Sawblade. Ignores defense AND the damage cap — beats tanks."},
+  masenko: {name:"Masenko",        kind:"atk", ki:22, rate:2.1, tgt:"one", beam:"#ffb0e0", axis:"burst",
+            desc:"Two-handed forehead blast."},
+  masenko_p:{name:"Masenko",       kind:"atk", ki:22, rate:2.0, tgt:"one", beam:"#ffb0e0", axis:"burst",
+            desc:"Focused ki blast."},
+  solar:   {name:"Solar Flare",    kind:"debuff",ki:12,tgt:"one", axis:"control",
+            desc:"Blinds a foe: -accuracy & -speed for 2 turns. No damage."},
+  regen:   {name:"Regeneration",   kind:"heal", ki:20, self:true, heal:0.28, axis:"self-sustain",
+            desc:"Namekian regen: restore 28% of max HP."},
+  senzu_toss:{name:"Senzu Bean",   kind:"item", ki:0, tgt:"ally", axis:"team-sustain", uses:2,
+            desc:"Toss a bean: fully revive/heal one ally. Limited supply."},
+  // transformation toggles (handled specially)
+  kaioken: {name:"Kaio-ken",       kind:"xform", ki:0, mult:1.9, spd:1.25, drainKi:7, drainHp:0.045, au:"#ff5a4a",
+            desc:"×1.9 power & +speed. Drains ki AND HP every turn. Toggle off to stop the burn."},
+  ssj:     {name:"Super Saiyan",   kind:"xform", ki:0, mult:2.6, spd:1.15, drainKi:11, au:"#ffe14a",
+            desc:"×2.6 attack. Drains ki each turn. The legendary transformation."},
+  latent:  {name:"Latent Power",   kind:"xform", ki:0, mult:2.9, spd:1.1, drainKi:13, au:"#c98bff",
+            desc:"×2.9 attack when the hidden power erupts. Heavy ki drain."},
+};
+
+/* ---------- guard/basic that everyone can always do ---------- */
+const GUARD = {name:"Guard", kind:"guard", ki:0, regen:22, desc:"Brace: take 60% less this round, restore ki."};
+
+/* ---------- enemies & sagas (canon-anchored, power levels as BigInt flavor) ---------- */
+const ENEMIES = {
+  raditz: {name:"Raditz", av:"👹", au:"#8a5", hp:420, ki:60, atk:50, def:24, spd:44, pl:1500,
+    ai:["punch","punch","doubleSunday"], moves:{doubleSunday:{name:"Double Sunday",rate:2.0,ki:0,beam:"#9f9"}}},
+  nappa:  {name:"Nappa", av:"👺", au:"#c66", hp:640, ki:60, atk:60, def:34, spd:36, pl:4000,
+    ai:["punch","bombFist","punch"], moves:{bombFist:{name:"Explosive Wave",rate:2.2,ki:0,aoe:true,beam:"#f96"}}},
+  vegeta_s:{name:"Vegeta (Scouter)", av:"🦍", au:"#88f", hp:820, ki:120, atk:72, def:38, spd:50, pl:18000,
+    phase:0.4, ai:["punch","galickGun","punch","galickGun"],
+    moves:{galickGun:{name:"Galick Gun",rate:2.6,ki:0,beam:"#b07bff"}},
+    onPhase:"Vegeta powers up — attack rising!"},
+  ginyu: {name:"Captain Ginyu", av:"🐸", au:"#a6f", hp:900, ki:150, atk:70, def:44, spd:54, pl:120000,
+    ai:["punch","milkyCannon","bodyChange","punch"],
+    moves:{milkyCannon:{name:"Milky Cannon",rate:2.3,ki:0,beam:"#c9f"},
+           bodyChange:{name:"Body Change",special:"steal"}}},
+  frieza:{name:"Frieza (Final Form)", av:"👾", au:"#d6f", hp:1500, ki:250, atk:86, def:48, spd:58, pl:120000000,
+    phase:0.5, ai:["deathBeam","punch","deathBeam","supernova"],
+    moves:{deathBeam:{name:"Death Beam",rate:1.6,ki:0,pierce:0.6,beam:"#f6a"},
+           supernova:{name:"Supernova",rate:3.4,ki:0,charge:1,aoe:true,beam:"#f60"}},
+    onPhase:"“Behold... 100% of my power!” Frieza heals and surges!"},
+  cell: {name:"Perfect Cell", av:"🪲", au:"#6f9", hp:2100, ki:300, atk:92, def:56, spd:60, pl:900000000,
+    phase:0.5, regenPerTurn:0.03, ai:["punch","kamehamehaC","absorb","kamehamehaC"],
+    moves:{kamehamehaC:{name:"Solar Kamehameha",rate:2.9,ki:0,charge:1,beam:"#9fd"},
+           absorb:{name:"Ki Drain",special:"drain"}},
+    onPhase:"Cell regenerates and grins — the cells remember everything."},
+  buu:  {name:"Majin Buu", av:"🍬", au:"#f9c", hp:2600, ki:200, atk:84, def:40, spd:46, regenPerTurn:0.05,
+    pl:2000000000, ai:["punch","candyBeam","punch","hpBlast"],
+    moves:{candyBeam:{name:"Candy Beam",special:"candy",beam:"#f9c"},
+           hpBlast:{name:"Vanishing Ball",rate:2.4,ki:0,beam:"#f6c"}}},
+  kidbuu:{name:"Kid Buu", av:"😈", au:"#e46", hp:2400, ki:260, atk:96, def:38, spd:70, regenPerTurn:0.04,
+    pl:5000000000, ai:["punch","planetBurst","punch","planetBurst"],
+    moves:{planetBurst:{name:"Planet Burst",rate:3.8,ki:0,charge:1,aoe:true,beam:"#f26"}}},
+};
+
+const SAGAS = [
+  {tag:"Saga 1 · Saiyans", title:"The Saiyans Arrive",
+   text:"A space pod cracks the sky. Raditz, then the brutal Nappa, then Prince Vegeta himself. Earth has never faced power like this.",
+   fights:[["raditz"],["nappa"],["vegeta_s"]], unlock:null,
+   reward:{level:1}},
+  {tag:"Saga 2 · Namek / Frieza", title:"The Emperor of the Universe",
+   text:"On dying Namek, the Ginyu Force guards a tyrant who can destroy planets with a fingertip. Push past your limits.",
+   fights:[["ginyu"],["frieza"]], unlock:"xform",
+   reward:{level:1, msg:"Zenkai surge — transformations awaken!"}},
+  {tag:"Saga 3 · Androids / Cell", title:"The Perfect Being",
+   text:"Dr. Gero's ultimate creation has absorbed the androids and reached its perfect form. Cell announces his Games.",
+   fights:[["cell"]], unlock:"upgrade",
+   reward:{level:2, msg:"Hyperbolic Time Chamber — everyone grows stronger."}},
+  {tag:"Saga 4 · Majin Buu", title:"The Djinn Awakens",
+   text:"Ancient magic revives Majin Buu. He regenerates from nothing and reshapes his foes into candy. Only everything you have will do.",
+   fights:[["buu"],["kidbuu"]], unlock:"max",
+   reward:{level:2, msg:"Final resolve — power at its peak."}},
+];
+
+/* ===================================================================
+   STATE
+   =================================================================== */
+const S = {
+  party:[], roster:[], sagaIdx:0, fightIdx:0,
+  units:[], order:[], turn:0, active:null, busy:false,
+  awaiting:null, pendingMove:null, senzu:2, over:false,
+};
+
+/* ---------- unit construction ---------- */
+function mkUnit(def, side, id){
+  return {
+    id, side, src:def, name:def.name, av:def.av, au:def.au,
+    maxHp:def.hp, hp:def.hp, maxKi:def.ki, ki:def.ki,
+    atk:def.atk, def:def.def, spd:def.spd, pl:def.pl,
+    level: side==="ally" ? levelOf() : 0,
+    form:null, formMult:1, formSpd:1,
+    debuff:0, charged:null, guarding:false, dead:false,
+    el:null, avatarEl:null, floatHost:null,
+  };
+}
+function levelOf(){ return 1 + (S.sagaIdx>=1?1:0) + (S.sagaIdx>=2?2:0) + (S.sagaIdx>=3?2:0); }
+// apply level scaling to an ally def snapshot
+function scaledAlly(fdef){
+  const lv = levelOf();
+  const g = 1 + 0.18*(lv-1); // sublinear-ish growth (idea: sqrt-curve difficulty)
+  return {...fdef,
+    hp:Math.round(fdef.hp*g), ki:Math.round(fdef.ki*(1+0.10*(lv-1))),
+    atk:Math.round(fdef.atk*g), def:Math.round(fdef.def*g), spd:fdef.spd,
+    pl:BigInt(fdef.pl)*BigInt(Math.round(g*100))/100n };
+}
+
+/* ===================================================================
+   DAMAGE  — one function, defense pre-cap, floor once at the boundary
+   =================================================================== */
+function computeDamage(atk, tgt, move){
+  const rate = move.rate || 1;
+  const power = atk.atk * atk.formMult * rate;
+  // accuracy (Solar Flare debuff lowers it)
+  const acc = 0.96 - (atk.debuff>0 ? 0.35 : 0);
+  if(!chance(acc)) return {miss:true};
+  // DEFENSE as pre-cap mitigation (dbz-team-combat#E2/E3)
+  const pierce = move.pierce || 0;
+  const effDef = tgt.def * (1 - pierce);
+  const K = 1.4;                         // mitigation constant (swept, not guessed)
+  let raw = power - effDef * K;
+  raw = Math.max(power * 0.18, raw);     // floor: defense never fully negates
+  raw *= 0.9 + rng()*0.2;                // ±10% variance
+  let crit = false;
+  if(chance(0.12)){ crit = true; raw *= 1.7; }
+  // %maxHP cap keeps boss fights fair — UNLESS the move opts out (dbz-team-combat#E1)
+  if(!move.ignoreCap){
+    const cap = tgt.maxHp * 0.34;
+    if(raw > cap) raw = cap;
+  }
+  // quantize ONCE, here at the HP-write boundary (loop-combat#E1)
+  const dmg = Math.max(1, Math.floor(raw));
+  return {dmg, crit, pierced: pierce>=0.7};
+}
+
+/* ===================================================================
+   TURN ORDER — speed desc, ties broken by SYMMETRIC jitter (E5)
+   =================================================================== */
+function buildOrder(){
+  const live = S.units.filter(u=>!u.dead);
+  // assign a fresh symmetric jitter each round so equal-speed ties don't
+  // systematically favor one side (stable sort skewed ~62/38 in memory).
+  live.forEach(u=> u._j = rng());
+  live.sort((a,b)=>{
+    const sa = a.spd*a.formSpd - (a.debuff>0?a.spd*0.25:0);
+    const sb = b.spd*b.formSpd - (b.debuff>0?b.spd*0.25:0);
+    if(sb!==sa) return sb-sa;
+    return b._j - a._j;                 // symmetric coin, not source order
+  });
+  S.order = live;
+}
+
+/* ===================================================================
+   RENDER
+   =================================================================== */
+const $ = s => document.querySelector(s);
+const el = (t,c,h)=>{const e=document.createElement(t); if(c)e.className=c; if(h!=null)e.innerHTML=h; return e;};
+
+function renderUnits(){
+  const er=$("#rowEnemies"), ar=$("#rowAllies"); er.innerHTML=""; ar.innerHTML="";
+  for(const u of S.units){
+    const host = u.side==="enemy" ? er : ar;
+    const node = el("div","unit"+(u.dead?" dead":""));
+    node.innerHTML =
+      `<div class="avatar">${u.av}<div class="aura"></div></div>
+       <div class="nameplate">
+         <div class="n"><span>${u.name}</span><span class="form"></span></div>
+         <div class="bar h"><i></i></div>
+         <div class="bar k"><i></i></div>
+         <div class="pl">PL ${fmtPower(u.pl)}</div>
+       </div>`;
+    host.appendChild(node);
+    u.el=node; u.avatarEl=node.querySelector(".avatar");
+    u.avatarEl.querySelector(".aura").style.setProperty("--au", u.au);
+    updateBars(u);
+  }
+}
+function updateBars(u){
+  if(!u.el) return;
+  u.el.querySelector(".bar.h>i").style.width = Math.max(0,100*u.hp/u.maxHp)+"%";
+  u.el.querySelector(".bar.k>i").style.width = Math.max(0,100*u.ki/u.maxKi)+"%";
+  u.el.querySelector(".form").textContent = u.form ? "★ "+MOVES[u.form].name : "";
+  u.el.classList.toggle("dead", u.dead);
+  u.el.classList.toggle("charged", !!u.form || !!u.charged);
+}
+
+let logLines=[];
+function log(html){ logLines.push(html); if(logLines.length>6) logLines.shift();
+  $("#log").innerHTML = logLines.slice().reverse().map(l=>"<div>"+l+"</div>").join(""); }
+
+function renderTurnbar(){
+  const tb=$("#turnbar"); tb.innerHTML="<span>Order:</span>";
+  S.order.forEach(u=>{
+    const c=el("span","chip"+(u===S.active?" now":"")+(u.side==="enemy"?" foe":""), u.name+(u.form?" ★":""));
+    tb.appendChild(c);
+  });
+}
+
+/* ---------- fx ---------- */
+function floatText(u, txt, cls){
+  const host=$("#arena"); const r=u.avatarEl.getBoundingClientRect(); const a=host.getBoundingClientRect();
+  const f=el("div","float "+cls, txt);
+  f.style.left=(r.left-a.left+r.width/2-10)+"px"; f.style.top=(r.top-a.top)+"px";
+  host.appendChild(f); setTimeout(()=>f.remove(),1000);
+}
+function hitFx(u){ u.el.classList.add("hit"); setTimeout(()=>u.el.classList.remove("hit"),320); }
+function actFx(u){ u.el.classList.add("act"); setTimeout(()=>u.el.classList.remove("act"),300); }
+function shake(){ const s=$("#stage"); s.classList.remove("shake"); void s.offsetWidth; s.classList.add("shake"); }
+function whiteFlash(a=.6){ const f=$("#flash"); f.style.transition="none"; f.style.opacity=a;
+  requestAnimationFrame(()=>{ f.style.transition="opacity .5s"; f.style.opacity=0; }); }
+function beamFx(from,to,color){
+  const host=$("#arena"), a=host.getBoundingClientRect();
+  const p1=from.avatarEl.getBoundingClientRect(), p2=to.avatarEl.getBoundingClientRect();
+  const x1=p1.left-a.left+p1.width/2, y1=p1.top-a.top+p1.height/2;
+  const x2=p2.left-a.left+p2.width/2, y2=p2.top-a.top+p2.height/2;
+  const len=Math.hypot(x2-x1,y2-y1), ang=Math.atan2(y2-y1,x2-x1)*180/Math.PI;
+  const b=el("div","beam"); b.style.setProperty("--bc",color);
+  b.style.left=x1+"px"; b.style.top=(y1-5)+"px"; b.style.width="0px"; b.style.transform=`rotate(${ang}deg)`;
+  host.appendChild(b);
+  requestAnimationFrame(()=>{ b.style.transition="width .18s ease-out, opacity .18s"; b.style.opacity=1; b.style.width=len+"px"; });
+  setTimeout(()=>{ b.style.transition="opacity .2s"; b.style.opacity=0; setTimeout(()=>b.remove(),200); },260);
+}
+const wait = ms => new Promise(r=>setTimeout(r,ms));
+
+/* ===================================================================
+   BATTLE FLOW
+   =================================================================== */
+function startFight(){
+  const enemyIds = SAGAS[S.sagaIdx].fights[S.fightIdx];
+  S.units=[]; let idc=0;
+  S.party.forEach(fid=>{
+    const u=mkUnit(scaledAlly(FIGHTERS[fid]), "ally", "a"+(idc++));
+    u.baseFighter=fid; S.units.push(u);
+  });
+  enemyIds.forEach(eid=>{
+    const u=mkUnit(ENEMIES[eid], "enemy", "e"+(idc++));
+    u.eid=eid; u.phased=false; S.units.push(u);
+  });
+  S.turn=0; S.over=false; logLines=[];
+  showBattle();
+  renderUnits();
+  log(`<b>Battle start:</b> ${enemyIds.map(e=>ENEMIES[e].name).join(" & ")} appears!`);
+  nextRound();
+}
+
+function livingAllies(){ return S.units.filter(u=>u.side==="ally"&&!u.dead); }
+function livingEnemies(){ return S.units.filter(u=>u.side==="enemy"&&!u.dead); }
+
+async function nextRound(){
+  if(checkEnd()) return;
+  buildOrder(); renderTurnbar();
+  S.roundQueue = S.order.slice();
+  advanceTurn();
+}
+
+async function advanceTurn(){
+  if(checkEnd()) return;
+  // find next living unit in queue
+  let u=null;
+  while(S.roundQueue.length){ const c=S.roundQueue.shift(); if(!c.dead){ u=c; break; } }
+  if(!u){ // round complete → tick regen for bosses, new round
+    await endRoundTick();
+    if(checkEnd()) return;
+    S.turn++; return nextRound();
+  }
+  S.active=u; renderTurnbar();
+  // per-turn upkeep for transformed allies (ki/hp drain — keeps cost binding, dbz-combat#E4)
+  await upkeep(u);
+  if(u.dead){ return advanceTurn(); }
+  if(u.side==="ally") promptPlayer(u);
+  else { await wait(520); enemyAct(u); }
+}
+
+async function upkeep(u){
+  // small ki regen for everyone each of their turns (persistent pool, not full refill)
+  if(u.side==="ally" && !u.form) u.ki=Math.min(u.maxKi,u.ki+5);
+  if(u.form){
+    const m=MOVES[u.form];
+    u.ki-=m.drainKi||0;
+    if(m.drainHp){ const d=Math.floor(u.maxHp*m.drainHp); u.hp-=d; floatText(u,"-"+d,"dmg"); }
+    if(u.ki<=0){ u.ki=0; log(`<b>${u.name}</b> runs out of ki — <span class="k">${MOVES[u.form].name} drops.</span>`);
+      setForm(u,null); }
+    if(u.hp<=0){ u.hp=1; setForm(u,null); }
+    updateBars(u);
+  }
+  // enemy regenerators (Cell/Buu) tick at round end instead; nothing here
+}
+
+async function endRoundTick(){
+  for(const e of livingEnemies()){
+    if(e.src.regenPerTurn){
+      const h=Math.floor(e.maxHp*e.src.regenPerTurn);
+      e.hp=Math.min(e.maxHp,e.hp+h); floatText(e,"+"+h,"heal"); updateBars(e);
+    }
+    // resolve charged telegraphed attacks
+  }
+  await wait(120);
+}
+
+/* ---------- player input ---------- */
+function promptPlayer(u){
+  showHUD(true);
+  $("#prompt").textContent = `${u.name}'s turn — choose an action`;
+  S.awaiting="action"; S.pendingMove=null;
+  actFx(u);
+  buildActionButtons(u);
+}
+function buildActionButtons(u){
+  const box=$("#actions"); box.innerHTML="";
+  const fid=u.baseFighter;
+  const moveIds = FIGHTERS[fid].moves.slice();
+  // gate transform behind unlock
+  const list=[];
+  for(const mid of moveIds){
+    const m=MOVES[mid];
+    if(m.kind==="xform"){
+      if(!S.xformUnlocked) continue;
+      if(mid==="latent" && S.sagaIdx<2) continue;
+    }
+    list.push(mid);
+  }
+  list.push("__guard__");
+  for(const mid of list){
+    const m = mid==="__guard__" ? GUARD : MOVES[mid];
+    const b=el("button","btn "+(m.kind==="atk"||m.kind==="xform"?"":"k"));
+    let label=m.name, sub=m.axis||m.desc||"";
+    if(mid===u.form) label="Revert "+m.name;
+    b.innerHTML=`<span>${label}</span>`+
+      (m.ki?`<span class="cost">◈ ${m.ki} ki</span>`:``)+
+      `<small>${m.kind==="xform"?(mid===u.form?"turn off":"transform"):(m.axis||"")}</small>`;
+    const affordable = u.ki>=(m.ki||0) && !(m.kind==="item"&&S.senzu<=0);
+    b.disabled=!affordable;
+    b.onclick=()=>chooseMove(u, mid, m);
+    box.appendChild(b);
+  }
+}
+
+function chooseMove(u, mid, m){
+  if(S.awaiting!=="action") return;
+  if(m.kind==="xform"){ toggleForm(u,mid); return endPlayerAction(u); }
+  if(m.kind==="guard"){ doGuard(u); return endPlayerAction(u); }
+  if(m.kind==="heal" && m.self){ doHeal(u,u,m); return endPlayerAction(u); }
+  if(m.kind==="item"){ // needs ally target
+    S.pendingMove={mid,m}; S.awaiting="target-ally";
+    $("#prompt").textContent="Toss the Senzu Bean to which ally? (tap a fighter)";
+    enableTargets("ally"); return;
+  }
+  if(m.kind==="debuff" || m.kind==="atk"){
+    S.pendingMove={mid,m}; S.awaiting="target-enemy";
+    $("#prompt").textContent=`${m.name} — choose a target (tap a foe)`;
+    enableTargets("enemy"); return;
+  }
+}
+function enableTargets(side){
+  S.units.forEach(u=>{
+    if(u.side===side && !u.dead){
+      u.el.style.cursor="crosshair"; u.el.classList.add("foeglow");
+      u.el.onclick=()=>pickTarget(u);
+    }
+  });
+}
+function clearTargets(){ S.units.forEach(u=>{ if(u.el){u.el.onclick=null; u.el.style.cursor=""; u.el.classList.remove("foeglow");} }); }
+function pickTarget(t){
+  if(!S.awaiting || !S.awaiting.startsWith("target")) return;
+  const {mid,m}=S.pendingMove; clearTargets();
+  const u=S.active;
+  if(m.kind==="item"){ doSenzu(u,t); return endPlayerAction(u); }
+  if(m.kind==="debuff"){ doDebuff(u,t,m); return endPlayerAction(u); }
+  doAttack(u,t,mid,m).then(()=>endPlayerAction(u));
+}
+
+function endPlayerAction(u){
+  S.awaiting=null; showHUD(false);
+  setTimeout(()=>advanceTurn(), 260);
+}
+
+/* ---------- action resolvers ---------- */
+async function doAttack(u, t, mid, m){
+  if(m.ki){ u.ki-=m.ki; }
+  actFx(u); updateBars(u);
+  if(m.slow) log(`<b>${u.name}</b> charges <span class="k">${m.name}</span>...`);
+  await wait(m.slow?420:180);
+  if(m.beam){ beamFx(u,t,m.beam); await wait(200); }
+  const r=computeDamage(u,t,m);
+  if(r.miss){ floatText(t,"MISS","miss"); log(`${u.name}'s ${m.name} <span class="r">missed!</span>`); return; }
+  applyDamage(t, r.dmg);
+  hitFx(t); shake(); whiteFlash(m.slow?.5:.25);
+  floatText(t, (r.pierced?"⟿":"")+r.dmg, r.crit?"crit":(r.pierced?"pierce":"dmg"));
+  log(`<b>${u.name}</b> hits <b>${t.name}</b> with ${m.name} for <span class="g">${r.dmg}</span>${r.crit?" <span class='g'>CRIT!</span>":""}${r.pierced?" <span class='k'>(pierced)</span>":""}`);
+  if(mid==="punch"){ u.ki=Math.min(u.maxKi,u.ki+(m.regen||0)); updateBars(u); }
+  await afterHit(t);
+}
+async function afterHit(t){
+  if(t.hp<=0){ await faint(t); }
+  else checkPhase(t);
+}
+function applyDamage(t, dmg){ t.hp=Math.max(0,t.hp-dmg); updateBars(t); }
+
+function doGuard(u){ u.guarding=true; u.ki=Math.min(u.maxKi,u.ki+GUARD.regen); updateBars(u);
+  actFx(u); log(`<b>${u.name}</b> guards — ki restored.`); }
+function doHeal(u,t,m){ if(m.ki)u.ki-=m.ki; const h=Math.floor(t.maxHp*m.heal); t.hp=Math.min(t.maxHp,t.hp+h);
+  updateBars(u); updateBars(t); floatText(t,"+"+h,"heal"); log(`<b>${u.name}</b> regenerates <span class="g">${h}</span> HP.`); }
+function doDebuff(u,t,m){ if(m.ki)u.ki-=m.ki; t.debuff=2; updateBars(u);
+  actFx(u); whiteFlash(.7); floatText(t,"BLIND","miss");
+  log(`<b>${u.name}</b> blinds <b>${t.name}</b> — accuracy & speed down!`); }
+function doSenzu(u,t){ S.senzu--; const wasDead=t.dead;
+  t.dead=false; t.hp=t.maxHp; t.ki=Math.min(t.maxKi,t.ki+40); updateBars(t);
+  floatText(t,"REVIVE","heal"); whiteFlash(.6);
+  log(`<b>${u.name}</b> tosses a Senzu Bean — <b>${t.name}</b> ${wasDead?"revives at":"restored to"} full HP! (${S.senzu} left)`); }
+
+/* ---------- transformations ---------- */
+function toggleForm(u, mid){
+  if(u.form===mid){ setForm(u,null); log(`<b>${u.name}</b> powers down.`); }
+  else { setForm(u,mid); const m=MOVES[mid];
+    whiteFlash(.85); shake();
+    log(`<b class="g">${u.name} transforms — ${m.name}!</b> ×${m.mult} power.`); }
+  updateBars(u);
+}
+function setForm(u, mid){
+  u.form=mid;
+  if(mid){ const m=MOVES[mid]; u.formMult=m.mult; u.formSpd=m.spd||1; u.au=m.au; u.charged=true;
+    if(u.avatarEl) u.avatarEl.querySelector(".aura").style.setProperty("--au",m.au); }
+  else { u.formMult=1; u.formSpd=1; u.au=FIGHTERS[u.baseFighter]?.au||u.au; u.charged=false;
+    if(u.avatarEl) u.avatarEl.querySelector(".aura").style.setProperty("--au",u.au); }
+  if(u.el) u.el.classList.toggle("charged", !!mid);
+}
+
+/* ---------- boss phase transitions ---------- */
+function checkPhase(t){
+  if(t.side!=="enemy" || t.phased) return;
+  const d=t.src; if(!d.phase) return;
+  if(t.hp <= t.maxHp*d.phase){
+    t.phased=true; t.atk=Math.round(t.atk*1.35); t.spd=Math.round(t.spd*1.1);
+    if(t.eid==="frieza"){ t.hp=Math.min(t.maxHp, t.hp+Math.floor(t.maxHp*0.25)); }
+    updateBars(t); whiteFlash(.9); shake();
+    log(`<span class="r">⚠ ${d.onPhase||t.name+" powers up!"}</span>`);
+  }
+}
+
+/* ---------- faint / end ---------- */
+async function faint(u){
+  u.hp=0; u.dead=true; setForm(u,null); updateBars(u);
+  floatText(u,"DOWN","miss"); await wait(160);
+  log(`<b>${u.name}</b> is down!`);
+}
+
+/* ---------- enemy AI ---------- */
+async function enemyAct(e){
+  showHUD(true); $("#actions").innerHTML=""; $("#prompt").textContent=`${e.name} is acting...`;
+  actFx(e);
+  // resolve a pending charged telegraph
+  if(e.charged){ const mv=e.charged; e.charged=null; e.el.classList.remove("charged");
+    await execEnemyMove(e, mv, true); return afterEnemy(e); }
+  // choose from AI script (cycled) with light adaptation
+  const script=e.src.ai; e._i=(e._i==null?-1:e._i); e._i=(e._i+1)%script.length;
+  let key=script[e._i];
+  const mv = e.src.moves && e.src.moves[key] ? e.src.moves[key] : {name:"Strike",rate:1.4};
+  // special abilities
+  if(mv.special){ await enemySpecial(e,mv); return afterEnemy(e); }
+  // charge telegraph
+  if(mv.charge && !e.charged){
+    e.charged=mv; e.el.classList.add("charged");
+    log(`<span class="r">${e.name} is charging ${mv.name}!</span> — brace or burst it down!`);
+    return afterEnemy(e);
+  }
+  await execEnemyMove(e, mv, false);
+  afterEnemy(e);
+}
+async function execEnemyMove(e, mv, wasCharged){
+  const targets = mv.aoe ? livingAllies() : [pickEnemyTarget()];
+  if(!targets.length || !targets[0]){ afterEnemy(e); return; } // no-target guard (dbz-combat#E3)
+  if(mv.beam){ for(const t of targets){ beamFx(e,t,mv.beam);} await wait(200); }
+  for(const t of targets){
+    const r=computeDamage(e,t,{rate:mv.rate||1.4, pierce:mv.pierce||0});
+    if(r.miss){ floatText(t,"MISS","miss"); log(`${e.name}'s ${mv.name} missed ${t.name}.`); continue; }
+    let dmg=r.dmg; if(t.guarding) dmg=Math.floor(dmg*0.4);
+    applyDamage(t,dmg); hitFx(t); shake(); whiteFlash(mv.aoe?.6:.3);
+    floatText(t, dmg, r.crit?"crit":"dmg");
+    log(`<span class="r">${e.name}</span> uses <b>${mv.name}</b> on <b>${t.name}</b> — <span class="r">${dmg}</span>${t.guarding?" <span class='k'>(guarded)</span>":""}`);
+    if(t.hp<=0) await faint(t);
+  }
+}
+async function enemySpecial(e, mv){
+  const t=pickEnemyTarget(); if(!t) return;
+  if(mv.special==="steal"){ // Ginyu body change: swap a chunk of atk
+    const steal=Math.floor(t.atk*0.3); t.atk-=steal; e.atk+=steal; updateBars(e);
+    whiteFlash(.8); log(`<span class="r">${e.name}</span> attempts Body Change on <b>${t.name}</b> — steals power!`);
+  } else if(mv.special==="drain"){ const d=Math.min(t.ki,40); t.ki-=d; e.hp=Math.min(e.maxHp,e.hp+d*4);
+    updateBars(t); updateBars(e); floatText(t,"-"+d+" ki","pierce");
+    log(`<span class="r">${e.name}</span> drains <b>${t.name}</b>'s ki and heals!`);
+  } else if(mv.special==="candy"){ if(chance(0.5)){ t.debuff=2; floatText(t,"CANDY","miss");
+      log(`<span class="r">${e.name}</span> turns <b>${t.name}</b> to candy — dazed!`);
+    } else { const dmg=computeDamage(e,t,{rate:1.6}).dmg; applyDamage(t,dmg); hitFx(t); shake();
+      floatText(t,dmg,"dmg"); log(`<span class="r">${e.name}</span>'s Candy Beam grazes <b>${t.name}</b> for ${dmg}.`);
+      if(t.hp<=0) await faint(t); } }
+  await wait(200);
+}
+function pickEnemyTarget(){
+  const allies=livingAllies(); if(!allies.length) return null;
+  // prefer the lowest-HP living ally 60% of the time, else random (feels smart, stays fair)
+  if(chance(0.6)) return allies.slice().sort((a,b)=>a.hp-b.hp)[0];
+  return allies[rint(0,allies.length-1)];
+}
+function afterEnemy(e){
+  // clear one-round guards on allies after every enemy acts? guards last the round.
+  showHUD(false);
+  setTimeout(()=>advanceTurn(), 240);
+}
+
+/* ---------- end conditions ---------- */
+function checkEnd(){
+  if(S.over) return true;
+  if(!livingAllies().length){ S.over=true; loseBattle(); return true; }
+  if(!livingEnemies().length){ S.over=true; winBattle(); return true; }
+  return false;
+}
+function winBattle(){
+  // clear guards for next fight
+  S.units.forEach(u=>u.guarding=false);
+  setTimeout(()=>{
+    const saga=SAGAS[S.sagaIdx];
+    if(S.fightIdx < saga.fights.length-1){
+      S.fightIdx++;
+      showResult("VICTORY", `${teamLine()} stand victorious. The next foe steps forward...`, "Next Battle ▶", ()=>{ healParty(0.4); startFight(); });
+    } else {
+      // saga complete
+      if(S.sagaIdx < SAGAS.length-1){
+        S.sagaIdx++; S.fightIdx=0;
+        showResult("SAGA CLEARED", `The ${saga.tag.split("·")[1]||""} arc is over. Your fighters grow stronger.`, "Continue ▶", ()=>enterSaga());
+      } else {
+        showResult("🏆 EARTH IS SAVED", `Kid Buu is gone. ${teamLine()} — legends across every saga. Thanks for playing!`, "Play Again ▶", ()=>location.reload());
+      }
+    }
+  }, 700);
+}
+function loseBattle(){
+  setTimeout(()=>{
+    showResult("DEFEAT", `${SAGAS[S.sagaIdx].fights[S.fightIdx].map(e=>ENEMIES[e].name).join(" & ")} was too strong. Regroup and try again.`,
+      "Retry Battle ▶", ()=>{ healParty(1); startFight(); });
+  }, 700);
+}
+function healParty(frac){ /* handled by rebuild in startFight via scaledAlly; nothing persistent to carry */ }
+function teamLine(){ return S.party.map(f=>FIGHTERS[f].name).join(", "); }
+
+/* ===================================================================
+   SCREENS / NAV
+   =================================================================== */
+function show(id){ ["screen-title","screen-roster","screen-saga","screen-battle","screen-result"]
+  .forEach(s=>$("#"+s).classList.toggle("hidden", s!==id));
+  $("#hud").classList.toggle("hidden", id!=="screen-battle"); }
+function showBattle(){ show("screen-battle"); }
+function showHUD(v){ $("#hud").classList.toggle("hidden", !v); }
+function showResult(title,text,btn,cb){ show("screen-result");
+  $("#resultTitle").textContent=title; $("#resultText").textContent=text;
+  const b=$("#resultBtn"); b.textContent=btn; b.onclick=cb; }
+
+function enterSaga(){
+  const s=SAGAS[S.sagaIdx];
+  show("screen-saga");
+  $("#sagaTag").textContent=s.tag; $("#sagaTitle").textContent=s.title; $("#sagaText").textContent=s.text;
+  let un="";
+  if(s.unlock==="xform"){ S.xformUnlocked=true; un="⚡ "+(s.reward.msg||"Transformations unlocked!"); }
+  else if(s.reward&&s.reward.msg){ un="⚡ "+s.reward.msg; }
+  $("#sagaUnlock").textContent=un;
+}
+
+/* ---------- roster picking ---------- */
+function buildRoster(){
+  const box=$("#pick"); box.innerHTML="";
+  Object.entries(FIGHTERS).forEach(([id,f])=>{
+    const c=el("div","hero");
+    c.innerHTML=`<div class="av">${f.av}</div><div class="nm">${f.name}</div>
+      <div class="role">${f.role}</div>
+      <div class="st">HP ${f.hp} · Ki ${f.ki}<br>ATK ${f.atk} · DEF ${f.def} · SPD ${f.spd}<br>
+      <span style="color:var(--dim)">${f.bio}</span></div>`;
+    c.onclick=()=>togglePick(id,c);
+    box.appendChild(c);
+  });
+}
+function togglePick(id,c){
+  const i=S.party.indexOf(id);
+  if(i>=0){ S.party.splice(i,1); c.classList.remove("on"); }
+  else { if(S.party.length>=3){ return; } S.party.push(id); c.classList.add("on"); }
+  $("#pickHint").textContent = S.party.length<3 ? `Select ${3-S.party.length} more` : "Team ready!";
+  $("#startGame").disabled = S.party.length!==3;
+}
+
+/* ---------- wire up ---------- */
+$("#toRoster").onclick=()=>{ show("screen-roster"); buildRoster(); };
+$("#startGame").onclick=()=>{ S.sagaIdx=0; S.fightIdx=0; S.xformUnlocked=false; enterSaga(); };
+$("#sagaGo").onclick=()=>{ startFight(); };
+
+// keyboard: 1-5 pick actions, g guard
+document.addEventListener("keydown",e=>{
+  if(S.awaiting==="action"){
+    const btns=[...$("#actions").querySelectorAll(".btn")];
+    if(/^[1-9]$/.test(e.key)){ const b=btns[+e.key-1]; if(b&&!b.disabled) b.click(); }
+  }
+});
+
+show("screen-title");
+</script>
+</body>
+</html>

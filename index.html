@@ -422,11 +422,13 @@ const SPRITES={
   snake:{type:"h",skin:"#e6a6c6",gi:"#c0392b",pants:"#7a2d6a",boots:"#4a2d4a",hair:"gohan",hairC:"#20242c"},
   bubbles:{type:"h",skin:"#8a5a3a",gi:"#8a5a3a",pants:"#7a4a2a",boots:"#5a3a1a",tail:true,hair:"none",eye:"#20140a"},
   turtle:{type:"turtle"},
+  android8:{type:"h",skin:"#9ab0a0",gi:"#3a3a3a",pants:"#2a2a2a",boots:"#1a1a1a",big:true,hair:"gohan",hairC:"#20242c",bolts:true},
   default:{type:"h",skin:SKIN,gi:"#8890a0",pants:"#5a6070",boots:"#333",hair:"none"},
 };
 const NAME2SPR={"Chi-Chi":"chichi","Bulma":"bulma","Master Roshi":"roshi","Korin":"korin","Dende":"dende","Elder Guru":"guru","Yamcha":"yamcha",
   "Ox-King":"oxking","Nurse":"nurse","Launch":"launch","Turtle":"turtle","King Kai":"kingkai","Bubbles":"bubbles",
-  "Princess Snake":"snake","Grand Kai":"grandkai","Mr. Popo":"popo","Supreme Kai":"supremekai","Old Witch":"witch"};
+  "Princess Snake":"snake","Grand Kai":"grandkai","Mr. Popo":"popo","Supreme Kai":"supremekai","Old Witch":"witch",
+  "Android 8":"android8","Traveler":"bandit"};
 function _rr(c,x,y,w,h,r){ r=Math.min(r,w/2,h/2); c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); c.fill(); }
 function _tri(c,ax,ay,bx,by,cx,cy){ c.beginPath(); c.moveTo(ax,ay); c.lineTo(bx,by); c.lineTo(cx,cy); c.closePath(); c.fill(); }
 function drawChar(ctx,X,Y,s,key){ const sp=SPRITES[key];
@@ -1017,13 +1019,22 @@ const MAPS={
     exits:[{x:10,y:10,to:"westcity",tx:12,ty:2}], start:{x:10,y:9}},
 
   wasteland:{name:"Rocky Wasteland",env:"desert",music:"battle",amb:300,hint:"The Saiyans' landing zone. Nappa blocks the path east.",
-    grid:mkGrid(24,14,"R",[{c:"R",x:5,y:3,w:2},{c:"R",x:10,y:8,w:2},{c:"R",x:15,y:4},{c:"R",x:18,y:10},{c:"<",x:1,y:6},{c:">",x:22,y:6}]),
+    grid:mkGrid(24,14,"R",[{c:"R",x:5,y:3,w:2},{c:"R",x:10,y:8,w:2},{c:"R",x:15,y:4},{c:"R",x:18,y:10},{c:"<",x:1,y:6},{c:">",x:22,y:6},{c:">",x:20,y:1}]),
     npcs:[{x:5,y:10,av:"🐱",name:"Korin",role:"heal",lines:["Have a Senzu — good as new!"]},
       {x:8,y:3,av:"👩‍🔧",name:"Bulma",role:"shop",shopName:"Capsule Corp",lines:["Restock before Nappa flattens you."]},
-      {x:19,y:4,av:"🐺",name:"Yamcha",role:"train",lines:["Grind a few levels — smart move."]}],
+      {x:19,y:4,av:"🐺",name:"Yamcha",role:"train",lines:["Grind a few levels — smart move."]},
+      {x:20,y:2,av:"🧭",name:"Traveler",lines:["A frozen wasteland lies to the north. Wild yeti roam it — good hunting."]}],
     enemies:[{x:11,y:5,eid:"saibaman"},{x:14,y:9,eid:"dino"},{x:17,y:6,eid:"bandit"},{x:10,y:11,eid:"wolf"}],
     boss:{x:12,y:3,storyIdx:1,name:"Nappa",av:"👺",intro:["You're all bugs to me!","Let's see you scratch me!"]},
-    exits:[{x:1,y:6,to:"westcity",tx:20,ty:6},{x:22,y:6,to:"battlefield",tx:2,ty:6}], start:{x:2,y:6}},
+    exits:[{x:1,y:6,to:"westcity",tx:20,ty:6},{x:22,y:6,to:"battlefield",tx:2,ty:6},{x:20,y:1,to:"snowfield",tx:10,ty:9}], start:{x:2,y:6}},
+
+  snowfield:{name:"Frozen North",env:"snow",music:"snow",amb:520,hint:"A blizzard-swept mountain range. Frost yeti and wolves prowl the drifts.",
+    grid:mkGrid(20,12,"T",[{c:"H",x:9,y:3,w:2,h:2},{c:"T",x:4,y:6},{c:"T",x:16,y:5},{c:"R",x:14,y:8},{c:"~",x:5,y:8,w:2},{c:"<",x:10,y:10}]),
+    npcs:[{x:6,y:4,av:"🤖",name:"Android 8",role:"heal",lines:["...friend. Android 8 will help you rest.","Be careful out in the cold."]},
+      {x:13,y:3,av:"🐺",name:"Yamcha",role:"train",lines:["Cold's brutal, but the yeti give great XP. Spar first?"]},
+      {x:16,y:9,av:"👩‍🔧",name:"Bulma",role:"shop",shopName:"Capsule Corp",lines:["Even up here, Capsule Corp delivers. Bundle up!"]}],
+    enemies:[{x:7,y:7,eid:"yeti"},{x:13,y:6,eid:"wolf"},{x:15,y:7,eid:"yeti"},{x:8,y:8,eid:"wolf"}],
+    exits:[{x:10,y:10,to:"wasteland",tx:20,ty:2}], start:{x:10,y:9}},
 
   battlefield:{name:"Saiyan Battlefield",env:"desert",music:"boss",amb:280,hint:"Prince Vegeta awaits. This is the true test of the Saiyan saga.",
     grid:mkGrid(24,14,"R",[{c:"R",x:7,y:4,w:2,h:2},{c:"R",x:16,y:8,w:2},{c:"R",x:12,y:3},{c:"<",x:1,y:6},{c:">",x:22,y:7}]),

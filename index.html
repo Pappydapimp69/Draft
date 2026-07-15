@@ -556,19 +556,39 @@ const AUDIO=(()=>{
   let on = (localStorage.getItem("dbz_sound")||"on")!=="off";
   let curTrack=null, nextTime=0, stepIdx=0, timer=null;
   const voices=new Set(); const cool={};
-  // A minor pentatonic pool
+  // note table (used by some SFX)
   const F={A2:110,C3:130.81,D3:146.83,E3:164.81,G3:196,A3:220,C4:261.63,D4:293.66,E4:329.63,G4:392,A4:440,C5:523.25,E5:659.25};
-  const R=0; // rest
-  const TRACKS={
-    overworld:{bpm:100, bass:[F.A2,R,F.E3,R,F.A2,R,F.G3,R, F.D3,R,F.A2,R,F.E3,R,F.D3,R],
-                        lead:[F.A4,R,R,F.C5,R,F.A4,F.G4,R, F.E4,R,F.G4,R,F.A4,R,R,R]},
-    battle:{bpm:150,    bass:[F.A2,F.A2,F.E3,F.E3,F.G3,F.G3,F.A2,F.A2, F.D3,F.D3,F.E3,F.E3,F.A2,F.A2,F.E3,F.G3],
-                        lead:[F.A4,R,F.E4,F.A4,R,F.C5,R,F.A4, F.G4,R,F.E4,F.G4,R,F.A4,F.C5,R]},
-    boss:{bpm:132,      bass:[F.A2,R,F.A2,F.C3,R,F.A2,F.G3,R, F.A2,R,F.A2,F.D3,R,F.C3,F.A2,R],
-                        lead:[F.C5,R,F.A4,R,F.E4,R,F.A4,F.G4, F.C5,R,F.E5,R,F.D4,R,F.C5,R]},
-    victory:{bpm:120,   bass:[F.A2,F.E3,F.A3,F.C4,F.E4,R,R,R, R,R,R,R,R,R,R,R],
-                        lead:[F.A4,F.C5,F.E5,R,F.C5,F.E5,R,R, R,R,R,R,R,R,R,R], once:true}
+  // ---- multi-layer music engine: bass · pads (chord progressions) · arpeggio · generated lead · drums ----
+  const semi=(root,n)=>root*Math.pow(2,n/12);
+  const SCALES={ maj:[0,2,4,5,7,9,11], min:[0,2,3,5,7,8,10], majPent:[0,2,4,7,9], minPent:[0,3,5,7,10], dorian:[0,2,3,5,7,9,10], lydian:[0,2,4,6,7,9,11] };
+  // one theme per environment mood: root Hz · scale · chord-root progression (semitones/bar) · tempo · energy · layers
+  const THEMES={
+    heroic:   {root:220,scale:"majPent",prog:[0,7,-3,5], bpm:112,energy:.5, pad:1,drums:1,mood:1,lead:"square",  bass:"triangle"},
+    town:     {root:262,scale:"maj",    prog:[0,5,7,5],  bpm:126,energy:.65,pad:1,drums:1,mood:1,lead:"square",  bass:"triangle"},
+    calm:     {root:196,scale:"lydian", prog:[0,5,-5,-2],bpm:84, energy:.15,pad:1,drums:0,mood:1,lead:"sine",    bass:"sine"},
+    battle:   {root:220,scale:"minPent",prog:[0,-2,5,3], bpm:152,energy:.9, pad:0,drums:1,mood:0,lead:"sawtooth",bass:"triangle"},
+    boss:     {root:196,scale:"min",    prog:[0,-1,-3,-5],bpm:138,energy:.8,pad:1,drums:1,mood:0,lead:"square",  bass:"sawtooth"},
+    finalboss:{root:174,scale:"min",    prog:[0,3,-2,-4],bpm:160,energy:1,  pad:1,drums:1,mood:0,lead:"sawtooth",bass:"sawtooth"},
+    eerie:    {root:165,scale:"min",    prog:[0,1,-2,0], bpm:96, energy:.3, pad:1,drums:0,mood:0,lead:"triangle",bass:"sine"},
+    cosmic:   {root:147,scale:"lydian", prog:[0,7,4,9],  bpm:76, energy:.25,pad:1,drums:0,mood:1,lead:"sine",    bass:"sine"},
+    sacred:   {root:262,scale:"maj",    prog:[0,4,7,5],  bpm:72, energy:.2, pad:1,drums:0,mood:1,lead:"triangle",bass:"sine"},
+    snow:     {root:294,scale:"maj",    prog:[0,-3,5,-5],bpm:100,energy:.4, pad:1,drums:0,mood:1,lead:"triangle",bass:"sine"},
+    desert:   {root:196,scale:"dorian", prog:[0,5,3,-2], bpm:104,energy:.45,pad:1,drums:1,mood:1,lead:"square",  bass:"triangle"},
+    victory:  {root:262,scale:"maj",    prog:[0,5,7,0],  bpm:120,energy:.7, pad:1,drums:1,mood:1,lead:"square",  bass:"triangle",once:1},
   };
+  const STEPS_BAR=8;
+  function mprng(seed){ let s=(seed>>>0)||1; return ()=>{ s=(Math.imul(s,1664525)+1013904223)>>>0; return s/4294967296; }; }
+  function themeSeed(name){ let h=2166136261; for(let i=0;i<name.length;i++){ h^=name.charCodeAt(i); h=Math.imul(h,16777619); } return h>>>0; }
+  const LEADS={};
+  function leadFor(name){ if(LEADS[name])return LEADS[name]; const t=THEMES[name]; const sc=SCALES[t.scale];
+    const rnd=mprng(themeSeed(name)); const bars=t.prog.length, len=bars*STEPS_BAR, seq=[];
+    for(let i=0;i<len;i++){ const strong=(i%STEPS_BAR)%2===0;
+      if(rnd()<(strong?0.22:0.55)){ seq.push(null); continue; }
+      const chordRoot=t.prog[Math.floor(i/STEPS_BAR)%bars];
+      let deg=(strong&&rnd()<0.7)?[0,2,4][Math.floor(rnd()*3)]:Math.floor(rnd()*sc.length);
+      seq.push(chordRoot + sc[deg%sc.length] + 12 + (rnd()<0.3?12:0)); }
+    LEADS[name]=seq; return seq; }
+  let _ns=12345; function mnoise(){ _ns=(Math.imul(_ns,1103515245)+12345)>>>0; return (_ns/4294967296)*2-1; }
   function init(){
     if(ctx) return;
     try{ ctx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ ctx=null; return; }
@@ -589,29 +609,45 @@ const AUDIO=(()=>{
   }
   function resume(){ try{ if(ctx && ctx.state!=="running") ctx.resume(); }catch(e){} } // fire-and-forget (dog#E1)
   function gesture(){ init(); resume(); if(ctx && !timer) timer=setInterval(scheduler,25); }
-  function note(time,freq,dur,type,gain,dest){
+  function voice(time,freq,dur,type,gain,dest,cutoff){
     if(!ctx||!isFinite(freq)||freq<=0) return; // guard boundary (dog#E3)
-    const o=ctx.createOscillator(), g=ctx.createGain();
-    o.type=type; o.frequency.setValueAtTime(freq,time);
-    g.gain.setValueAtTime(0.0001,time);
-    g.gain.exponentialRampToValueAtTime(gain,time+0.012);
-    g.gain.exponentialRampToValueAtTime(0.0001,time+dur);
+    const o=ctx.createOscillator(), g=ctx.createGain(); o.type=type; o.frequency.setValueAtTime(freq,time);
+    g.gain.setValueAtTime(0.0001,time); g.gain.exponentialRampToValueAtTime(gain,time+0.014); g.gain.exponentialRampToValueAtTime(0.0001,time+dur);
+    if(cutoff){ const f=ctx.createBiquadFilter(); f.type="lowpass"; f.frequency.setValueAtTime(cutoff,time);
+      o.connect(f); f.connect(g); g.connect(dest||music); o.start(time); o.stop(time+dur+0.03);
+      o.onended=()=>{ try{o.disconnect();f.disconnect();g.disconnect();}catch(e){} }; return; }
     o.connect(g); g.connect(dest||music); o.start(time); o.stop(time+dur+0.02);
     o.onended=()=>{ try{o.disconnect();g.disconnect();}catch(e){} }; // free nodes (dog#E6)
   }
+  function note(time,freq,dur,type,gain,dest){ voice(time,freq,dur,type,gain,dest); } // back-compat (some SFX)
+  function chordAt(time,root,chordRoot,dur,gain,major){ const th=major?4:3; const base=semi(root,chordRoot);
+    [0,th,7].forEach((iv,k)=>voice(time, semi(base,iv), dur, "triangle", gain*(k===0?1:0.66), music, 1400)); }
+  function drum(time,kind,gain){ if(!ctx)return;
+    if(kind==="kick"){ const o=ctx.createOscillator(),g=ctx.createGain(); o.type="sine"; o.frequency.setValueAtTime(150,time); o.frequency.exponentialRampToValueAtTime(45,time+0.12);
+      g.gain.setValueAtTime(gain,time); g.gain.exponentialRampToValueAtTime(0.0001,time+0.17); o.connect(g); g.connect(music); o.start(time); o.stop(time+0.19); o.onended=()=>{try{o.disconnect();g.disconnect();}catch(e){}}; return; }
+    const len=Math.floor(ctx.sampleRate*(kind==="snare"?0.14:0.05)); const b=ctx.createBuffer(1,len,ctx.sampleRate); const d=b.getChannelData(0);
+    for(let i=0;i<len;i++)d[i]=mnoise()*Math.pow(1-i/len,kind==="snare"?1.2:3);
+    const s=ctx.createBufferSource(); s.buffer=b; const f=ctx.createBiquadFilter(); f.type=kind==="snare"?"bandpass":"highpass"; f.frequency.value=kind==="snare"?1800:7000;
+    const g=ctx.createGain(); g.gain.setValueAtTime(gain,time); g.gain.exponentialRampToValueAtTime(0.0001,time+(kind==="snare"?0.15:0.05));
+    s.connect(f); f.connect(g); g.connect(music); s.start(time); s.stop(time+0.16); s.onended=()=>{try{s.disconnect();f.disconnect();g.disconnect();}catch(e){}}; }
   function scheduler(){ // look-ahead window on ctx.currentTime (shadow#E1)
-    if(!ctx||!curTrack) return;
-    const t=TRACKS[curTrack]; const spb=60/t.bpm/2; // eighth notes
+    if(!ctx||!curTrack) return; const t=THEMES[curTrack]||THEMES.heroic; const spb=60/t.bpm/2; // eighth-note grid
+    const lead=leadFor(curTrack), bars=t.prog.length, loop=bars*STEPS_BAR, th=t.mood?4:3;
     while(nextTime < ctx.currentTime+0.15){
-      const b=t.bass[stepIdx], l=t.lead[stepIdx];
-      if(b) note(nextTime,b,spb*0.95,"triangle",0.5,music);
-      if(l) note(nextTime,l*1,spb*0.8,"square",0.22,music);
+      const gi=stepIdx%loop, bar=Math.floor(gi/STEPS_BAR), beat=gi%STEPS_BAR, chordRoot=t.prog[bar%bars];
+      if(beat%2===0) voice(nextTime, semi(t.root,chordRoot-12), spb*(t.energy>.7?1.8:3.4), t.bass, 0.5, music, 480);
+      if(t.energy>.7 && beat===2) voice(nextTime, semi(t.root,chordRoot-12), spb*1.5, t.bass, 0.32, music, 480);
+      if(t.pad && beat===0) chordAt(nextTime, t.root, chordRoot, spb*STEPS_BAR*0.94, 0.12, t.mood);
+      if(t.energy>.55){ const arp=[0,th,7,12][beat%4]; voice(nextTime, semi(t.root,chordRoot+arp), spb*0.85, "square", 0.09, music, 2200); }
+      const ln=lead[gi]; if(ln!=null) voice(nextTime, semi(t.root,ln), spb*1.4, t.lead, 0.19, music, 3800);
+      if(t.drums){ if(beat===0||beat===4)drum(nextTime,"kick",0.5); if(beat===2||beat===6)drum(nextTime,"snare",0.3);
+        if(t.energy>.62 && beat%2===1)drum(nextTime,"hat",0.14); }
       stepIdx++;
-      if(stepIdx>=t.bass.length){ stepIdx=0; if(t.once){ curTrack=null; break; } }
+      if(stepIdx>=loop){ stepIdx=0; if(t.once){ curTrack=null; break; } }
       nextTime+=spb;
     }
   }
-  function playMusic(name){ init(); if(!ctx) return; if(curTrack===name) return;
+  function playMusic(name){ init(); if(!ctx) return; if(!THEMES[name])name="heroic"; if(curTrack===name) return;
     curTrack=name; stepIdx=0; nextTime=ctx.currentTime+0.06; if(!timer) timer=setInterval(scheduler,25); }
   function stopMusic(){ curTrack=null; }
   function setAmbiance(freq){ if(ambFilt&&ctx) try{ ambFilt.frequency.setTargetAtTime(freq,ctx.currentTime,0.4);}catch(e){} }
@@ -822,71 +858,161 @@ function mkGrid(w,h,border,feats){
   });
   return g;
 }
+// ---- environment palettes (per-map visual theme) ----
+const ENVS={
+  forest:{ground:"#3a6b3f",edge:"#2e5533",path:"#b9a06a",water:"#2f6fb0",solid:"🌳",rock:"🪨",bldg:"#7a5230"},
+  city:{ground:"#5a6270",edge:"#454b57",path:"#8a92a0",water:"#3a6fb0",solid:"🏢",rock:"🚗",bldg:"#6b7382"},
+  beach:{ground:"#d8c98a",edge:"#b7a86a",path:"#e6d9a2",water:"#2f9fd0",solid:"🌴",rock:"🐚",bldg:"#c98a5a"},
+  desert:{ground:"#c8a45a",edge:"#a5823f",path:"#dcc07a",water:"#3a8fb0",solid:"🌵",rock:"🪨",bldg:"#9a6b3a"},
+  snow:{ground:"#dfe8f2",edge:"#c3cfe0",path:"#c0cfe0",water:"#7fbfe0",solid:"🌲",rock:"⛄",bldg:"#8aa0c0"},
+  space:{ground:"#1a1636",edge:"#100c26",path:"#3a2f6a",water:"#5a3fb0",solid:"✨",rock:"☄️",bldg:"#2a2450"},
+  namek:{ground:"#2f6b52",edge:"#245741",path:"#9ec27a",water:"#2f9fa0",solid:"🌿",rock:"🪨",bldg:"#3a7a5a"},
+  ship:{ground:"#33384a",edge:"#232838",path:"#4a5068",water:"#5a3fb0",solid:"⚙️",rock:"🔩",bldg:"#454b60"},
+  arena:{ground:"#8a8a7a",edge:"#6b6b5c",path:"#a8a898",water:"#3a6fb0",solid:"🪨",rock:"🗿",bldg:"#9a9a86"},
+  voidw:{ground:"#e8ecf4",edge:"#d0d8e8",path:"#d6deec",water:"#c0d0e8",solid:"⬜",rock:"◽",bldg:"#c0c8d8"},
+  sky:{ground:"#c9a06a",edge:"#a5824f",path:"#e0c088",water:"#7fc0e0",solid:"🏯",rock:"🪨",bldg:"#b98a4a"},
+  kai:{ground:"#e0c85a",edge:"#c0a83f",path:"#f0e08a",water:"#e08a4a",solid:"🍄",rock:"🪨",bldg:"#c0a84a"},
+  candy:{ground:"#e88fb0",edge:"#c86f92",path:"#f2b0cc",water:"#c060a0",solid:"🍭",rock:"🍬",bldg:"#d070a0"},
+  darkship:{ground:"#241f38",edge:"#181428",path:"#3a3050",water:"#5a3fb0",solid:"🕯️",rock:"💀",bldg:"#332a48"},
+};
 const MAPS={
-  paozu:{name:"Mount Paozu",hint:"Goku's home. Recruit allies, shop, train, then face what lands to the east.",
-    amb:420, music:"overworld",
-    grid:mkGrid(24,14,"T",[
-      {c:"H",x:3,y:2,w:2,h:2},{c:"~",x:3,y:10,w:3,h:2},
-      {c:"T",x:9,y:4},{c:"T",x:10,y:5},{c:"T",x:16,y:9},{c:"T",x:17,y:9},{c:"T",x:7,y:11},{c:"T",x:20,y:3},
-      {c:"R",x:14,y:3},{c:"R",x:19,y:7},{c:"R",x:11,y:9},{c:">",x:22,y:6},
-    ]),
-    npcs:[
-      {x:6,y:2,av:"👧",name:"Chi-Chi",lines:["Goku! You're really going out there?","Come back safe — and make sure Gohan studies!"]},
-      {x:9,y:2,av:"👩‍🔧",name:"Bulma",role:"shop",shopName:"Capsule Corp",lines:["Power levels are dropping from the sky!","Stock up on capsules before you fight."]},
-      {x:13,y:11,av:"🐢",name:"Master Roshi",lines:["Ki runs out — don't just spam your biggest blast.","Each attack has a purpose: pierce, burst, control."]},
-      {x:18,y:6,av:"🐺",name:"Yamcha",role:"train",lines:["Need practice? Spar with my bots any time.","Beat 'em for XP and Zeni — come back whenever."]},
-    ],
-    enemies:[{x:11,y:6,eid:"saibaman"},{x:15,y:10,eid:"saibaman"},{x:8,y:8,eid:"saibaman"},{x:20,y:9,eid:"saibaman"}],
-    recruits:[
-      {x:6,y:6,fid:"gohan",intro:["Dad! I want to help fight too!","...Alright, Gohan. Stay close to me."]},
-      {x:15,y:4,fid:"piccolo",intro:["The Saiyans threaten my world too, Goku.","A temporary alliance — I'll fight beside you."]},
-    ],
-    boss:{x:21,y:6,storyIdx:0,name:"Raditz",av:"👹",intro:["So this is Earth... you must be Kakarot's friends.","Prepare yourselves!"]},
-    exits:[{x:22,y:6,to:"wasteland",tx:2,ty:6}],
-    start:{x:3,y:6},
-  },
-  wasteland:{name:"Rocky Wasteland",hint:"The Saiyans landed. Rest at Korin's, train, shop, then push east.",
-    amb:300, music:"battle",
-    grid:mkGrid(24,14,"R",[
-      {c:"R",x:5,y:3,w:2},{c:"R",x:10,y:8,w:2},{c:"R",x:15,y:4},{c:"R",x:18,y:10},{c:"R",x:8,y:11},{c:"R",x:13,y:6},
-      {c:"<",x:1,y:6},{c:">",x:22,y:7},
-    ]),
-    npcs:[
-      {x:5,y:10,av:"🐱",name:"Korin",heal:true,lines:["Have a Senzu — good as new!","Come back any time your ki runs low."]},
-      {x:8,y:3,av:"👩‍🔧",name:"Bulma",role:"shop",shopName:"Capsule Corp",lines:["Set up shop out here too.","Restock before you take on Vegeta."]},
-      {x:19,y:4,av:"🐺",name:"Yamcha",role:"train",lines:["Grinding a few levels? Smart.","Spar as much as you like."]},
-    ],
+  paozu:{name:"Mount Paozu",env:"forest",music:"heroic",amb:420,hint:"Goku's home. Recruit allies, shop, train, then head east.",
+    grid:mkGrid(24,14,"T",[{c:"H",x:3,y:2,w:2,h:2},{c:"~",x:3,y:10,w:3,h:2},{c:"T",x:9,y:4},{c:"T",x:16,y:9},{c:"T",x:7,y:11},{c:"R",x:14,y:3},{c:"R",x:19,y:8},{c:">",x:22,y:6}]),
+    npcs:[{x:6,y:2,av:"👧",name:"Chi-Chi",lines:["Goku! You're going out there?","Come back safe!"]},
+      {x:9,y:2,av:"👩‍🔧",name:"Bulma",role:"shop",shopName:"Capsule Corp",lines:["Stock up before you fight!"]},
+      {x:13,y:11,av:"🐢",name:"Master Roshi",lines:["Ki runs out — don't just spam your biggest blast."]},
+      {x:18,y:6,av:"🐺",name:"Yamcha",role:"train",lines:["Spar with my bots for XP and Zeni!"]}],
+    recruits:[{x:6,y:6,fid:"gohan",intro:["Dad! Let me help!","...Alright, Gohan."]},{x:15,y:4,fid:"piccolo",intro:["We share an enemy, Goku.","I'll fight beside you."]}],
+    enemies:[{x:11,y:6,eid:"saibaman"},{x:15,y:10,eid:"saibaman"},{x:8,y:8,eid:"saibaman"}],
+    boss:{x:21,y:6,storyIdx:0,name:"Raditz",av:"👹",intro:["So this is Earth...","Prepare yourselves!"]},
+    exits:[{x:22,y:6,to:"westcity",tx:2,ty:6}], start:{x:3,y:6}},
+
+  westcity:{name:"West City",env:"city",music:"town",amb:500,hint:"A bustling city. Capsule Corp HQ, shops, and the road onward.",
+    grid:mkGrid(24,14,"H",[{c:"H",x:4,y:3,w:3,h:2},{c:"H",x:15,y:8,w:3,h:2},{c:"R",x:10,y:5},{c:"R",x:18,y:4},{c:"<",x:1,y:6},{c:">",x:22,y:6},{c:">",x:12,y:1}]),
+    npcs:[{x:6,y:6,av:"👩‍🔧",name:"Bulma",role:"shop",shopName:"Capsule Corp",lines:["Welcome to HQ! Best gear in the city."]},
+      {x:17,y:5,av:"🐺",name:"Yamcha",role:"train",lines:["City gym's open — let's spar."]},
+      {x:9,y:10,av:"👴",name:"Ox-King",lines:["Take care of my daughter Chi-Chi, hero."]},
+      {x:14,y:11,av:"👩‍⚕️",name:"Nurse",role:"heal",lines:["Rest up — you look worn out."]}],
+    enemies:[{x:13,y:6,eid:"saibaman"},{x:8,y:8,eid:"saibaman"}],
+    exits:[{x:1,y:6,to:"paozu",tx:20,ty:6},{x:22,y:6,to:"wasteland",tx:2,ty:6},{x:12,y:1,to:"kamehouse",tx:10,ty:9}], start:{x:2,y:6}},
+
+  kamehouse:{name:"Kame House",env:"beach",music:"calm",amb:600,hint:"Master Roshi's island. Heal, shop, and an old friend joins.",
+    grid:mkGrid(20,12,"~",[{c:"H",x:8,y:4,w:2,h:2},{c:"T",x:4,y:3},{c:"T",x:14,y:7},{c:"<",x:10,y:10}]),
+    npcs:[{x:6,y:5,av:"🐢",name:"Master Roshi",role:"heal",lines:["Ah, a rest by the sea. Good as new!"]},
+      {x:13,y:4,av:"👱‍♀️",name:"Launch",role:"shop",shopName:"Seaside Shop",lines:["Supplies for the road, sugar."]},
+      {x:12,y:8,av:"🐢",name:"Turtle",lines:["The sea is calm today... enjoy it while it lasts."]}],
+    recruits:[{x:9,y:7,fid:"krillin",intro:["Goku! I've been training here — take me along!","Ha! Good to have you, Krillin."]}],
+    enemies:[],
+    exits:[{x:10,y:10,to:"westcity",tx:12,ty:2}], start:{x:10,y:9}},
+
+  wasteland:{name:"Rocky Wasteland",env:"desert",music:"battle",amb:300,hint:"The Saiyans' landing zone. Nappa blocks the path east.",
+    grid:mkGrid(24,14,"R",[{c:"R",x:5,y:3,w:2},{c:"R",x:10,y:8,w:2},{c:"R",x:15,y:4},{c:"R",x:18,y:10},{c:"<",x:1,y:6},{c:">",x:22,y:6}]),
+    npcs:[{x:5,y:10,av:"🐱",name:"Korin",role:"heal",lines:["Have a Senzu — good as new!"]},
+      {x:8,y:3,av:"👩‍🔧",name:"Bulma",role:"shop",shopName:"Capsule Corp",lines:["Restock before Nappa flattens you."]},
+      {x:19,y:4,av:"🐺",name:"Yamcha",role:"train",lines:["Grind a few levels — smart move."]}],
     enemies:[{x:11,y:5,eid:"saibaman"},{x:14,y:9,eid:"saibaman"},{x:17,y:6,eid:"saibaman"},{x:10,y:11,eid:"saibaman"}],
-    recruits:[
-      {x:7,y:6,fid:"krillin",intro:["Goku! You didn't think I'd sit this out?","Ha! Good to have you, Krillin."]},
-    ],
-    boss:{x:12,y:3,storyIdx:1,name:"Nappa",av:"👺",intro:["Hah! You're all bugs to me.","Let's see if you can even scratch me!"]},
-    boss2:{x:20,y:9,storyIdx:2,name:"Vegeta",av:"🦍",intro:["I am the Prince of all Saiyans.","This is where you die."]},
-    exits:[{x:1,y:6,to:"paozu",tx:20,ty:6},{x:22,y:7,to:"namek",tx:2,ty:7}],
-    start:{x:2,y:6},
-  },
-  namek:{name:"Namek & Beyond",hint:"Frieza, Cell, and Buu await. Dende heals; shop & train before each fight.",
-    amb:520, music:"boss",
-    grid:mkGrid(24,15,"T",[
-      {c:"~",x:3,y:2,w:2,h:2},{c:"~",x:4,y:11,w:3,h:2},{c:"H",x:10,y:6,w:2,h:2},
-      {c:"R",x:15,y:3},{c:"T",x:7,y:8},{c:"R",x:19,y:10},{c:"T",x:13,y:11},{c:"R",x:6,y:5},
-      {c:"<",x:1,y:6},
-    ]),
-    npcs:[
-      {x:12,y:4,av:"🟩",name:"Dende",heal:true,lines:["I am Dende. Let me heal you.","The universe's strongest still stand before you."]},
-      {x:4,y:9,av:"👴",name:"Elder Guru",lines:["Your hidden power sleeps, young one.","When all seems lost, it awakens. Trust it."]},
-      {x:16,y:2,av:"👩‍🔧",name:"Bulma",role:"shop",shopName:"Capsule Corp",lines:["Even out here, Capsule Corp delivers.","You'll want Senzu for what's coming."]},
-      {x:9,y:9,av:"🐺",name:"Yamcha",role:"train",lines:["The final foes are monsters.","Train hard — I'll spar as long as you need."]},
-    ],
+    boss:{x:12,y:3,storyIdx:1,name:"Nappa",av:"👺",intro:["You're all bugs to me!","Let's see you scratch me!"]},
+    exits:[{x:1,y:6,to:"westcity",tx:20,ty:6},{x:22,y:6,to:"battlefield",tx:2,ty:6}], start:{x:2,y:6}},
+
+  battlefield:{name:"Saiyan Battlefield",env:"desert",music:"boss",amb:280,hint:"Prince Vegeta awaits. This is the true test of the Saiyan saga.",
+    grid:mkGrid(24,14,"R",[{c:"R",x:7,y:4,w:2,h:2},{c:"R",x:16,y:8,w:2},{c:"R",x:12,y:3},{c:"<",x:1,y:6},{c:">",x:22,y:7}]),
+    npcs:[{x:4,y:9,av:"🐱",name:"Korin",role:"heal",lines:["Almost through the Saiyans — heal up."]},
+      {x:6,y:11,av:"🐺",name:"Yamcha",role:"train",lines:["Vegeta's no joke. Train first."]}],
+    enemies:[{x:10,y:6,eid:"saibaman"},{x:15,y:5,eid:"saibaman"},{x:18,y:10,eid:"saibaman"}],
+    boss:{x:20,y:9,storyIdx:2,name:"Vegeta",av:"🦍",intro:["I am the Prince of all Saiyans!","This is where you die."]},
+    exits:[{x:1,y:6,to:"wasteland",tx:20,ty:6},{x:22,y:7,to:"snakeway",tx:2,ty:7}], start:{x:2,y:6}},
+
+  snakeway:{name:"Snake Way",env:"space",music:"cosmic",amb:700,hint:"A million-mile road across the clouds toward Namek.",
+    grid:mkGrid(26,14,"R",[{c:"R",x:8,y:4},{c:"R",x:14,y:9},{c:"R",x:20,y:5},{c:"<",x:1,y:7},{c:">",x:24,y:7},{c:">",x:12,y:1}]),
+    npcs:[{x:6,y:7,av:"🐉",name:"Princess Snake",lines:["Stay on the path, traveler... or be lost forever."]},
+      {x:18,y:6,av:"🐺",name:"Yamcha",role:"train",lines:["Long road. Spar to pass the time."]}],
+    enemies:[{x:10,y:7,eid:"saibaman"},{x:16,y:8,eid:"saibaman"},{x:21,y:9,eid:"saibaman"}],
+    exits:[{x:1,y:7,to:"battlefield",tx:20,ty:7},{x:24,y:7,to:"namek",tx:2,ty:6},{x:12,y:1,to:"kingkai",tx:10,ty:9}], start:{x:2,y:7}},
+
+  kingkai:{name:"King Kai's Planet",env:"kai",music:"sacred",amb:640,hint:"A tiny world with heavy gravity. Train hard; grow strong.",
+    grid:mkGrid(20,12,"T",[{c:"H",x:9,y:3},{c:"T",x:4,y:7},{c:"T",x:15,y:5},{c:"<",x:10,y:10}]),
+    npcs:[{x:7,y:5,av:"🦗",name:"King Kai",role:"heal",lines:["Made it up Snake Way? Impressive.","Train under my gravity — you'll get much stronger."]},
+      {x:12,y:6,av:"🐺",name:"Yamcha",role:"train",lines:["Gravity training! Every rep counts double here."]},
+      {x:6,y:8,av:"🐒",name:"Bubbles",lines:["Ook! (Catch me for a workout.)"]}],
+    enemies:[{x:14,y:8,eid:"trainbot"}],
+    exits:[{x:10,y:10,to:"snakeway",tx:12,ty:2}], start:{x:10,y:9}},
+
+  namek:{name:"Planet Namek",env:"namek",music:"eerie",amb:520,hint:"A green alien world. The Ginyu Force guards Frieza.",
+    grid:mkGrid(24,15,"T",[{c:"~",x:3,y:2,w:2,h:2},{c:"~",x:4,y:11,w:3,h:2},{c:"H",x:10,y:6,w:2,h:2},{c:"R",x:15,y:3},{c:"R",x:6,y:5},{c:"<",x:1,y:6},{c:">",x:22,y:7}]),
+    npcs:[{x:12,y:4,av:"🟩",name:"Dende",role:"heal",lines:["I am Dende. Let me heal you."]},
+      {x:4,y:9,av:"👴",name:"Elder Guru",lines:["Your hidden power sleeps... it will awaken."]},
+      {x:16,y:2,av:"👩‍🔧",name:"Bulma",role:"shop",shopName:"Capsule Corp",lines:["Even on Namek, Capsule Corp delivers."]}],
     enemies:[{x:9,y:4,eid:"saibaman"},{x:18,y:8,eid:"saibaman"},{x:8,y:12,eid:"saibaman"}],
-    boss:{x:8,y:3,storyIdx:3,name:"Captain Ginyu",av:"🐸",intro:["CHANGE NOW! ...ahem. The Ginyu Force never loses.","Fight!"]},
-    boss2:{x:15,y:7,storyIdx:4,name:"Frieza",av:"👾",intro:["I've destroyed a hundred planets before breakfast.","You are nothing."]},
-    boss3:{x:11,y:11,storyIdx:5,name:"Perfect Cell",av:"🪲",intro:["Welcome to the Cell Games.","Show me your desperation."]},
-    exits:[{x:1,y:6,to:"wasteland",tx:20,ty:7}],
-    finalBoss:{x:20,y:3,storyIdx:6,name:"Majin Buu",av:"🍬",intro:["Buu turn you into candy!","Hee hee hee!"]},
-    finalBoss2:{x:20,y:12,storyIdx:7,name:"Kid Buu",av:"😈",intro:["...","(pure destruction incarnate)"]},
-    start:{x:2,y:7},
-  },
+    boss:{x:8,y:3,storyIdx:3,name:"Captain Ginyu",av:"🐸",intro:["The Ginyu Force never loses!","Fight!"]},
+    exits:[{x:1,y:6,to:"snakeway",tx:22,ty:7},{x:22,y:7,to:"friezaship",tx:2,ty:6}], start:{x:2,y:6}},
+
+  friezaship:{name:"Frieza's Ship",env:"ship",music:"boss",amb:360,hint:"Cold metal corridors. The emperor of the universe waits within.",
+    grid:mkGrid(24,14,"R",[{c:"R",x:6,y:3,w:2,h:2},{c:"R",x:14,y:8,w:3},{c:"R",x:18,y:4},{c:"H",x:10,y:10,w:2},{c:"<",x:1,y:6},{c:">",x:22,y:6}]),
+    npcs:[{x:4,y:9,av:"🟩",name:"Dende",role:"heal",lines:["Be careful — his power is beyond anything."]},
+      {x:8,y:11,av:"👩‍🔧",name:"Bulma",role:"shop",shopName:"Capsule Corp",lines:["Last chance to stock Senzu!"]},
+      {x:16,y:11,av:"🐺",name:"Yamcha",role:"train",lines:["Push past your limits before you face him."]}],
+    enemies:[{x:11,y:5,eid:"saibaman"},{x:16,y:6,eid:"saibaman"}],
+    boss:{x:20,y:6,storyIdx:4,name:"Frieza",av:"👾",intro:["I've destroyed a hundred planets before breakfast.","You are nothing."]},
+    exits:[{x:1,y:6,to:"namek",tx:20,ty:7},{x:22,y:6,to:"otherworld",tx:2,ty:6}], start:{x:2,y:6}},
+
+  otherworld:{name:"Other World",env:"space",music:"cosmic",amb:720,hint:"The afterlife's crossroads. Train, heal, and choose your path.",
+    grid:mkGrid(26,14,"R",[{c:"R",x:6,y:4},{c:"R",x:20,y:9},{c:"R",x:13,y:6},{c:"<",x:1,y:6},{c:">",x:24,y:6},{c:">",x:8,y:1},{c:">",x:17,y:1}]),
+    npcs:[{x:11,y:6,av:"😇",name:"Grand Kai",role:"heal",lines:["Rest, warrior. The hardest battles lie ahead."]},
+      {x:4,y:9,av:"👩‍🔧",name:"Bulma",role:"shop",shopName:"Capsule Corp",lines:["Even the afterlife needs supplies!"]}],
+    enemies:[{x:14,y:9,eid:"trainbot"},{x:19,y:5,eid:"trainbot"}],
+    exits:[{x:1,y:6,to:"friezaship",tx:20,ty:6},{x:24,y:6,to:"cellgames",tx:2,ty:6},{x:8,y:1,to:"hyperbolic",tx:10,ty:9},{x:17,y:1,to:"lookout",tx:10,ty:9}], start:{x:2,y:6}},
+
+  hyperbolic:{name:"Hyperbolic Time Chamber",env:"voidw",music:"sacred",amb:800,hint:"A day inside is a year out. The ultimate training ground.",
+    grid:mkGrid(20,12,"T",[{c:"H",x:9,y:3},{c:"<",x:10,y:10}]),
+    npcs:[{x:7,y:6,av:"🐺",name:"Yamcha",role:"train",lines:["Time flows strangely here — every fight is worth double.","Train until you're ready for the monsters ahead."]},
+      {x:12,y:5,av:"🟩",name:"Dende",role:"heal",lines:["Recover fully. You'll need everything."]}],
+    enemies:[{x:6,y:8,eid:"trainbot"},{x:13,y:8,eid:"trainbot"}],
+    exits:[{x:10,y:10,to:"otherworld",tx:8,ty:2}], start:{x:10,y:9}},
+
+  lookout:{name:"Kami's Lookout",env:"sky",music:"calm",amb:560,hint:"A platform in the sky. Heal, shop, and gather your resolve.",
+    grid:mkGrid(20,12,"T",[{c:"H",x:8,y:3,w:3,h:2},{c:"T",x:4,y:7},{c:"<",x:10,y:10}]),
+    npcs:[{x:6,y:6,av:"🧞",name:"Mr. Popo",role:"heal",lines:["Welcome. Rest as long as you need."]},
+      {x:13,y:5,av:"👩‍🔧",name:"Bulma",role:"shop",shopName:"Capsule Corp",lines:["A shop with a view!"]},
+      {x:11,y:8,av:"🟩",name:"Dende",lines:["I am guardian now. Earth is counting on you."]}],
+    enemies:[],
+    exits:[{x:10,y:10,to:"otherworld",tx:16,ty:2}], start:{x:10,y:9}},
+
+  cellgames:{name:"Cell Games Arena",env:"arena",music:"finalboss",amb:340,hint:"The perfect being has issued his challenge. Enter the ring.",
+    grid:mkGrid(24,14,"R",[{c:"R",x:6,y:3,w:2},{c:"R",x:17,y:9,w:2},{c:"R",x:12,y:10},{c:"<",x:1,y:6},{c:">",x:22,y:6}]),
+    npcs:[{x:4,y:9,av:"🟩",name:"Dende",role:"heal",lines:["The whole world is watching. Give it everything."]},
+      {x:7,y:11,av:"🐺",name:"Yamcha",role:"train",lines:["One last spar before the Games?"]}],
+    enemies:[{x:11,y:6,eid:"trainbot"},{x:16,y:5,eid:"trainbot"}],
+    boss:{x:20,y:6,storyIdx:5,name:"Perfect Cell",av:"🪲",intro:["Welcome to the Cell Games.","Show me your desperation!"]},
+    exits:[{x:1,y:6,to:"otherworld",tx:22,ty:6},{x:22,y:6,to:"kaiworld",tx:2,ty:6}], start:{x:2,y:6}},
+
+  kaiworld:{name:"Supreme Kai's World",env:"kai",music:"sacred",amb:660,hint:"Ancient and sacred. Dark magic stirs beyond.",
+    grid:mkGrid(24,14,"T",[{c:"T",x:6,y:3},{c:"~",x:15,y:9,w:2},{c:"H",x:10,y:5,w:2},{c:"<",x:1,y:6},{c:">",x:22,y:6},{c:">",x:12,y:1}]),
+    npcs:[{x:5,y:8,av:"🧝",name:"Supreme Kai",role:"heal",lines:["Only you can stop what's coming."]},
+      {x:8,y:11,av:"👩‍🔧",name:"Bulma",role:"shop",shopName:"Capsule Corp",lines:["Stock up — this is the end game."]},
+      {x:17,y:4,av:"🐺",name:"Yamcha",role:"train",lines:["Last training grounds. Make them count."]}],
+    enemies:[{x:13,y:7,eid:"trainbot"},{x:18,y:9,eid:"trainbot"}],
+    exits:[{x:1,y:6,to:"cellgames",tx:20,ty:6},{x:22,y:6,to:"buumap",tx:2,ty:6},{x:12,y:1,to:"babidiship",tx:10,ty:9}], start:{x:2,y:6}},
+
+  babidiship:{name:"Babidi's Ship",env:"darkship",music:"eerie",amb:380,hint:"A dungeon of dark magic. Trials wait in every chamber.",
+    grid:mkGrid(20,12,"R",[{c:"R",x:6,y:4},{c:"R",x:13,y:6},{c:"H",x:9,y:3},{c:"<",x:10,y:10}]),
+    npcs:[{x:7,y:6,av:"🧙",name:"Old Witch",role:"shop",shopName:"Dark Bazaar",lines:["Rare goods... for a price."]}],
+    enemies:[{x:11,y:5,eid:"trainbot"},{x:6,y:8,eid:"trainbot"},{x:14,y:8,eid:"trainbot"}],
+    exits:[{x:10,y:10,to:"kaiworld",tx:12,ty:2}], start:{x:10,y:9}},
+
+  buumap:{name:"Buu's Domain",env:"candy",music:"finalboss",amb:420,hint:"A world remade into candy. The djinn plays among the ruins.",
+    grid:mkGrid(24,14,"T",[{c:"T",x:7,y:4},{c:"R",x:16,y:9},{c:"~",x:11,y:6,w:2},{c:"<",x:1,y:6},{c:">",x:22,y:6}]),
+    npcs:[{x:4,y:9,av:"🧝",name:"Supreme Kai",role:"heal",lines:["Buu is chaos itself. Stay sharp."]},
+      {x:7,y:11,av:"🐺",name:"Yamcha",role:"train",lines:["The very end. One more spar?"]}],
+    enemies:[{x:10,y:5,eid:"trainbot"},{x:15,y:6,eid:"trainbot"}],
+    boss:{x:20,y:6,storyIdx:6,name:"Majin Buu",av:"🍬",intro:["Buu turn you into candy!","Hee hee hee!"]},
+    exits:[{x:1,y:6,to:"kaiworld",tx:20,ty:6},{x:22,y:6,to:"worldsend",tx:2,ty:6}], start:{x:2,y:6}},
+
+  worldsend:{name:"The Source of Nothing",env:"space",music:"finalboss",amb:760,hint:"The end of everything. Pure destruction incarnate awaits.",
+    grid:mkGrid(24,14,"R",[{c:"R",x:8,y:4},{c:"R",x:16,y:9},{c:"R",x:12,y:5},{c:"<",x:1,y:6}]),
+    npcs:[{x:4,y:9,av:"🟩",name:"Dende",role:"heal",lines:["Everyone's energy is with you now. Go!"]}],
+    enemies:[{x:11,y:7,eid:"trainbot"}],
+    boss:{x:20,y:6,storyIdx:7,name:"Kid Buu",av:"😈",intro:["...","(pure destruction incarnate)"]},
+    exits:[{x:1,y:6,to:"buumap",tx:20,ty:6}], start:{x:2,y:6}},
 };
 
 const OW={ px:0,py:0, tx:2,ty:4, dir:"down", moving:false, prog:0, fromX:0,fromY:0,toX:0,toY:0,
@@ -914,7 +1040,7 @@ function loadMap(id, sx, sy){
   const s=(sx!=null)?{x:sx,y:sy}:(m.start||{x:1,y:1});
   OW.tx=s.x; OW.ty=s.y; OW.px=s.x*TILE; OW.py=s.y*TILE; OW.moving=false;
   $("#areaName").textContent=m.name; $("#areaHint").textContent=m.hint;
-  AUDIO.setAmbiance(m.amb||400); AUDIO.playMusic(m.music||"overworld");
+  AUDIO.setAmbiance(m.amb||400); AUDIO.playMusic(m.music||"heroic");
   drawPartyStrip();
 }
 function addBoss(b){ if(!b) return;
@@ -938,25 +1064,22 @@ function drawOW(){
   // when the map is smaller than the view, center it (no black bars)
   const offX=mapW<viewW?(viewW-mapW)/2:0, offY=mapH<viewH?(viewH-mapH)/2:0;
   OW.cam.x=camX-offX; OW.cam.y=camY-offY;
+  const E=ENVS[(S.map&&S.map.env)||"forest"]||ENVS.forest;
   ctx.setTransform(DPR,0,0,DPR,0,0);
   // fill the whole view with the terrain base so margins are never black
-  ctx.fillStyle=(S.mapId==="wasteland")?"#5a4a30":(S.mapId==="namek")?"#255741":"#2e5533";
-  ctx.fillRect(0,0,viewW,viewH);
+  ctx.fillStyle=E.edge||E.ground; ctx.fillRect(0,0,viewW,viewH);
   ctx.save(); ctx.translate(-camX+offX,-camY+offY); // wrong-sky#E1: save/restore around world-space draws
-  // tiles
   const x0=Math.max(0,Math.floor(camX/TILE)-1), x1=Math.min(g[0].length,Math.ceil((camX+viewW)/TILE)+1);
   const y0=Math.max(0,Math.floor(camY/TILE)-1), y1=Math.min(g.length,Math.ceil((camY+viewH)/TILE)+1);
   for(let y=y0;y<y1;y++) for(let x=x0;x<x1;x++){
     const t=g[y][x]; const px=x*TILE, py=y*TILE;
-    // base grass
-    ctx.fillStyle=(S.mapId==="wasteland")?"#6b5a3a":(S.mapId==="namek")?"#2f6b52":"#3a6b3f";
-    ctx.fillRect(px,py,TILE,TILE);
+    ctx.fillStyle=E.ground; ctx.fillRect(px,py,TILE,TILE);
     ctx.fillStyle="rgba(0,0,0,0.05)"; if((x+y)%2) ctx.fillRect(px,py,TILE,TILE);
-    if(t===","){ ctx.fillStyle=(S.mapId==="wasteland")?"#8a7550":"#b9a06a"; ctx.fillRect(px+2,py+2,TILE-4,TILE-4); }
-    else if(t==="~"){ ctx.fillStyle="#2f6fb0"; ctx.fillRect(px,py,TILE,TILE); ctx.fillStyle="rgba(255,255,255,.12)"; ctx.fillRect(px+4,py+6,TILE-8,3); }
-    else if(t==="T"){ emoji(ctx,"🌳",px,py); }
-    else if(t==="R"){ emoji(ctx,"🪨",px,py); }
-    else if(t==="H"){ ctx.fillStyle="#7a5230"; ctx.fillRect(px,py,TILE,TILE); ctx.fillStyle="#5a3a20"; ctx.fillRect(px,py,TILE,6); }
+    if(t===","){ ctx.fillStyle=E.path; ctx.fillRect(px+2,py+2,TILE-4,TILE-4); }
+    else if(t==="~"){ ctx.fillStyle=E.water; ctx.fillRect(px,py,TILE,TILE); ctx.fillStyle="rgba(255,255,255,.12)"; ctx.fillRect(px+4,py+6,TILE-8,3); }
+    else if(t==="T"){ emoji(ctx,E.solid,px,py); }
+    else if(t==="R"){ emoji(ctx,E.rock,px,py); }
+    else if(t==="H"){ ctx.fillStyle=E.bldg||"#7a5230"; ctx.fillRect(px,py,TILE,TILE); ctx.fillStyle="rgba(0,0,0,.25)"; ctx.fillRect(px,py,TILE,6); }
     else if(t===">"||t==="<"){ ctx.fillStyle="rgba(255,210,74,.25)"; ctx.fillRect(px,py,TILE,TILE);
       ctx.strokeStyle="#ffd24a"; ctx.lineWidth=2; ctx.strokeRect(px+4,py+4,TILE-8,TILE-8); emoji(ctx,"✨",px,py,0.7); }
   }
@@ -1134,7 +1257,7 @@ function startTraining(){ const n=avgLevel()>=10?2:1; const ids=[]; for(let i=0;
 let B=null; // battle state
 function startEncounter(enemyIds, onWin, isBoss){
   MODE="battle"; OW.dialogOpen=false; $("#dialogue").style.display="none";
-  AUDIO.playMusic(isBoss?"boss":"battle");
+  AUDIO.playMusic(isBoss?(S.storyIdx>=6?"finalboss":"boss"):"battle");
   B={ units:[], order:[], roundQueue:[], active:null, awaiting:null, pending:null, over:false,
       onWin, isBoss, enemyIds, senzu:2, log:[] };
   let idc=0;
@@ -1381,13 +1504,13 @@ function endBattle(won){
       const rw=computeRewards(B.enemyIds); S.zeni+=rw.zeni; rw.drops.forEach(id=>addItem(id,1));
       const ups=[]; S.heroes.forEach(h=>{ if(gainXP(h,rw.xp)) ups.push(h.name+" → Lv"+h.level); });
       healParty(0.12); MODE="overworld"; $("#overworld").style.display="block";
-      AUDIO.playMusic(S.map.music||"overworld"); drawPartyStrip(); updateHud();
+      AUDIO.playMusic(S.map.music||"heroic"); drawPartyStrip(); updateHud();
       let msg=`+${rw.xp} XP · +${rw.zeni} Zeni`; if(rw.drops.length)msg+=" · found "+rw.drops.map(d=>ITEMS[d].name).join(", ");
       toast(msg); if(ups.length) setTimeout(()=>{ AUDIO.sfx("win"); toast("LEVEL UP! "+ups.join(", ")); },1600);
       if(cb) cb(); }
     else { // defeat: revive at Korin-less penalty, back to world
       AUDIO.sfx("down"); S.heroes.forEach(h=>{ h.hp=Math.max(1,Math.round(h.maxHp*0.4)); }); MODE="overworld";
-      $("#overworld").style.display="block"; AUDIO.playMusic(S.map.music||"overworld"); drawPartyStrip();
+      $("#overworld").style.display="block"; AUDIO.playMusic(S.map.music||"heroic"); drawPartyStrip();
       toast("Your team was overwhelmed — regroup and heal!"); }
   }, 700);
 }

@@ -988,6 +988,11 @@ const _ENVICONS={forest:["🏠","🌊"],city:["🏢","🌊"],beach:["🏠","🌊
   space:["🛸","🌀"],namek:["🛖","🌊"],ship:["🚪","⚡"],arena:["🏟️","🌊"],voidw:["🚪","💠"],sky:["🏯","☁️"],
   kai:["🏠","🌊"],candy:["🍰","🍮"],darkship:["🚪","🟣"]};
 for(const _k in _ENVICONS){ if(ENVS[_k]){ ENVS[_k].bIcon=_ENVICONS[_k][0]; ENVS[_k].wIcon=_ENVICONS[_k][1]; } }
+// terrain KIND: how the solid 'T' and 'R' tiles draw. "rock"/tree kinds are canvas-drawn (crisp, high
+// contrast, device-independent); "emoji" keeps the themed emoji but on a darker base so it never blends in.
+const _ENVKIND={forest:["tree","rock"],namek:["tree","rock"],desert:["cactus","rock"],snow:["pine","rock"],
+  beach:["palm","emoji"],sky:["emoji","rock"],kai:["emoji","rock"]};
+for(const _k in ENVS){ const kk=_ENVKIND[_k]||["emoji","emoji"]; ENVS[_k].tk=kk[0]; ENVS[_k].rk=kk[1]; }
 const MAPS={
   paozu:{name:"Mount Paozu",env:"forest",music:"heroic",amb:420,hint:"Goku's home. Recruit allies, shop, train, then head east.",
     grid:mkGrid(24,14,"T",[{c:"H",x:3,y:2,w:2,h:2},{c:"~",x:3,y:10,w:3,h:2},{c:"T",x:9,y:4},{c:"T",x:16,y:9},{c:"T",x:7,y:11},{c:"R",x:14,y:3},{c:"R",x:19,y:8},{c:">",x:22,y:6}]),
@@ -1202,8 +1207,8 @@ function drawOW(){
       ctx.strokeStyle="rgba(255,255,255,.25)"; ctx.lineWidth=2;
       for(let w=0;w<2;w++){ ctx.beginPath(); ctx.arc(px+TILE/2,py+10+w*14,7,0.15*Math.PI,0.85*Math.PI); ctx.stroke(); }
       emoji(ctx,E.wIcon||"🌊",px,py,0.7); }
-    else if(t==="T"){ emoji(ctx,E.solid,px,py); }
-    else if(t==="R"){ emoji(ctx,E.rock,px,py); }
+    else if(t==="T"){ if(E.tk&&E.tk!=="emoji") drawTreeTile(ctx,px,py,E.tk); else { objBase(ctx,px,py); emoji(ctx,E.solid,px,py); } }
+    else if(t==="R"){ if(E.rk==="rock") drawRockTile(ctx,px,py); else { objBase(ctx,px,py); emoji(ctx,E.rock,px,py); } }
     else if(t==="H"){ ctx.fillStyle=E.ground; ctx.fillRect(px,py,TILE,TILE); emoji(ctx,E.bIcon||"🏠",px,py,0.92); }
     else if(t===">"||t==="<"){ ctx.fillStyle="rgba(255,210,74,.25)"; ctx.fillRect(px,py,TILE,TILE);
       ctx.strokeStyle="#ffd24a"; ctx.lineWidth=2; ctx.strokeRect(px+4,py+4,TILE-8,TILE-8); emoji(ctx,"✨",px,py,0.7); }
@@ -1227,6 +1232,60 @@ function drawOW(){
 }
 function emoji(ctx,ch,px,py,scale){ scale=scale||1; ctx.font=Math.round(TILE*0.8*scale)+"px serif";
   ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText(ch,px+TILE/2,py+TILE/2+2); }
+// darker contrast base under emoji-objects so they don't blend into ground
+function objBase(ctx,px,py){ ctx.fillStyle="rgba(0,0,0,0.12)"; ctx.beginPath();
+  ctx.ellipse(px+TILE/2,py+TILE*0.74,TILE*0.34,TILE*0.16,0,0,7); ctx.fill(); }
+// grey canvas rock — clearly NOT green, high contrast vs grass (user feedback)
+function drawRockTile(ctx,px,py){ const cx=px+TILE/2, by=py+TILE*0.82;
+  ctx.fillStyle="rgba(0,0,0,0.14)"; ctx.beginPath(); ctx.ellipse(cx,by+2,TILE*0.34,TILE*0.14,0,0,7); ctx.fill();
+  // main boulder body
+  ctx.fillStyle="#7c828d"; ctx.beginPath();
+  ctx.moveTo(px+TILE*0.20,by); ctx.lineTo(px+TILE*0.30,py+TILE*0.34);
+  ctx.lineTo(px+TILE*0.52,py+TILE*0.22); ctx.lineTo(px+TILE*0.74,py+TILE*0.38);
+  ctx.lineTo(px+TILE*0.82,by); ctx.closePath(); ctx.fill();
+  // lit facet
+  ctx.fillStyle="#a3a9b4"; ctx.beginPath();
+  ctx.moveTo(px+TILE*0.30,py+TILE*0.34); ctx.lineTo(px+TILE*0.52,py+TILE*0.22);
+  ctx.lineTo(px+TILE*0.54,py+TILE*0.52); ctx.lineTo(px+TILE*0.38,by); ctx.closePath(); ctx.fill();
+  // shadow facet
+  ctx.fillStyle="#5f6570"; ctx.beginPath();
+  ctx.moveTo(px+TILE*0.54,py+TILE*0.52); ctx.lineTo(px+TILE*0.74,py+TILE*0.38);
+  ctx.lineTo(px+TILE*0.82,by); ctx.lineTo(px+TILE*0.54,by); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle="rgba(40,44,52,0.55)"; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(px+TILE*0.52,py+TILE*0.22); ctx.lineTo(px+TILE*0.54,py+TILE*0.52); ctx.stroke(); }
+// tree/plant canvas tiles by kind
+function drawTreeTile(ctx,px,py,kind){ const cx=px+TILE/2, by=py+TILE*0.86;
+  ctx.fillStyle="rgba(0,0,0,0.14)"; ctx.beginPath(); ctx.ellipse(cx,by+1,TILE*0.30,TILE*0.12,0,0,7); ctx.fill();
+  if(kind==="cactus"){
+    ctx.fillStyle="#3a8a4a"; _rr(ctx,cx-TILE*0.09,py+TILE*0.20,TILE*0.18,TILE*0.60,5);
+    _rr(ctx,cx-TILE*0.30,py+TILE*0.34,TILE*0.12,TILE*0.10,4); _rr(ctx,cx-TILE*0.30,py+TILE*0.34,TILE*0.10,TILE*0.26,4);
+    _rr(ctx,cx+TILE*0.18,py+TILE*0.28,TILE*0.12,TILE*0.10,4); _rr(ctx,cx+TILE*0.20,py+TILE*0.16,TILE*0.10,TILE*0.24,4);
+    ctx.fillStyle="rgba(255,255,255,0.10)"; _rr(ctx,cx-TILE*0.05,py+TILE*0.22,TILE*0.05,TILE*0.55,3);
+    return; }
+  if(kind==="palm"){
+    ctx.fillStyle="#7a5a2a"; ctx.beginPath(); ctx.moveTo(cx-3,by); ctx.quadraticCurveTo(cx-6,py+TILE*0.4,cx+2,py+TILE*0.24);
+    ctx.lineTo(cx+5,py+TILE*0.26); ctx.quadraticCurveTo(cx-1,py+TILE*0.42,cx+2,by); ctx.closePath(); ctx.fill();
+    ctx.fillStyle="#2f8a3a"; const fx=cx+2, fy=py+TILE*0.24;
+    for(let a=0;a<5;a++){ const ang=-Math.PI/2 + (a-2)*0.65;
+      ctx.beginPath(); ctx.moveTo(fx,fy);
+      ctx.quadraticCurveTo(fx+Math.cos(ang)*TILE*0.18,fy+Math.sin(ang)*TILE*0.18-4,
+        fx+Math.cos(ang)*TILE*0.34,fy+Math.sin(ang)*TILE*0.34);
+      ctx.quadraticCurveTo(fx+Math.cos(ang)*TILE*0.20,fy+Math.sin(ang)*TILE*0.20+3,fx,fy); ctx.fill(); }
+    return; }
+  // trunk (shared by tree & pine)
+  ctx.fillStyle="#6a4a2a"; _rr(ctx,cx-TILE*0.06,py+TILE*0.50,TILE*0.12,TILE*0.34,3);
+  if(kind==="pine"){
+    ctx.fillStyle="#2c6e3a";
+    _tri(ctx,cx,py+TILE*0.10,px+TILE*0.24,py+TILE*0.40,px+TILE*0.76,py+TILE*0.40);
+    _tri(ctx,cx,py+TILE*0.26,px+TILE*0.20,py+TILE*0.58,px+TILE*0.80,py+TILE*0.58);
+    ctx.fillStyle="#f2f6fb"; // snow cap
+    _tri(ctx,cx,py+TILE*0.10,px+TILE*0.36,py+TILE*0.24,px+TILE*0.64,py+TILE*0.24);
+  } else { // leafy tree
+    ctx.fillStyle="#2f7a3a"; ctx.beginPath(); ctx.arc(cx,py+TILE*0.34,TILE*0.28,0,7); ctx.fill();
+    ctx.fillStyle="#3f9a4a"; ctx.beginPath(); ctx.arc(cx-TILE*0.10,py+TILE*0.28,TILE*0.16,0,7); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx+TILE*0.10,py+TILE*0.30,TILE*0.14,0,7); ctx.fill();
+    ctx.fillStyle="rgba(0,0,0,0.10)"; ctx.beginPath(); ctx.arc(cx+TILE*0.12,py+TILE*0.44,TILE*0.13,0,7); ctx.fill();
+  } }
 
 /* ---------- loop ---------- */
 function owStep(ts){

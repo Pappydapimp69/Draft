@@ -403,6 +403,14 @@ const SPRITES={
   korin:{type:"korin"},
   trainbot:{type:"h",skin:"#c2ccdd",gi:"#5a6b8a",pants:"#39435c",boots:"#262c3c",gloves:"#8894ad",hair:"none",eye:"#39f"},
   yamcha:{type:"h",skin:SKIN,gi:"#e07a2a",under:"#3a6bd6",pants:"#39435c",boots:"#2a3040",hair:"gohan",hairC:"#20242c"},
+  // ---- trash enemy sprites ----
+  wolf:{type:"wolf"}, dino:{type:"dino"}, ghost:{type:"ghost"}, blob:{type:"blob"}, celljr:{type:"cell"},
+  bandit:{type:"h",skin:SKIN,gi:"#7a5a3a",pants:"#4a3a24",boots:"#2a1a10",hair:"gohan",hairC:"#20242c",glasses:true},
+  soldier:{type:"h",skin:"#9a6bd0",gi:"#2a2a2a",pants:"#1a1a1a",armor:"saiyan",armorColor:"#d6d6d6",armorTrim:"#6a8a3a",gloves:"#eee",boots:"#eee",hair:"none",scouter:true},
+  spacefiend:{type:"h",skin:"#5ab89a",gi:"#3a2a5a",pants:"#2a1a4a",boots:"#1a0a2a",hair:"none",antennae:true,eye:"#f42"},
+  yeti:{type:"h",skin:"#eef4ff",gi:"#dfe8f2",pants:"#cdd8e8",boots:"#9aa8c0",big:true,beard:true,beardC:"#f4f8ff",hair:"none",horns:true,hornColor:"#c0d0e0"},
+  android:{type:"h",skin:"#c8ccd4",gi:"#3a4a6a",pants:"#2a3a5a",boots:"#1a2a3a",gloves:"#8a94a8",hair:"gohan",hairC:"#20242c",eye:"#f00"},
+  imp:{type:"h",skin:"#b06ad0",gi:"#4a2f6a",pants:"#3a2050",boots:"#2a1040",hair:"none",horns:true,hornColor:"#e0c060",tail:true,hairC:"#8a4aa0"},
   oxking:{type:"h",skin:SKIN,gi:"#7a4a2a",pants:"#5a3a20",boots:"#3a2a18",big:true,beard:true,beardC:"#4a3320",hair:"none",horns:true,hornColor:"#d8c39a"},
   nurse:{type:"h",skin:SKIN,gi:"#f2f2f2",pants:"#f0b0c8",boots:"#e05a8a",hair:"bob",hairC:"#b83a5a"},
   launch:{type:"h",skin:SKIN,gi:"#3a6bd6",pants:"#2a4a9a",boots:"#e05a8a",hair:"bob",hairC:"#3ac0d0"},
@@ -431,6 +439,10 @@ function drawChar(ctx,X,Y,s,key){ const sp=SPRITES[key];
   if(spec.type==="saibaman") return drawSaibaman(ctx,X,Y,s);
   if(spec.type==="korin") return drawKorin(ctx,X,Y,s);
   if(spec.type==="turtle") return drawTurtle(ctx,X,Y,s);
+  if(spec.type==="wolf") return drawWolf(ctx,X,Y,s);
+  if(spec.type==="dino") return drawDino(ctx,X,Y,s);
+  if(spec.type==="ghost") return drawGhost(ctx,X,Y,s);
+  if(spec.type==="blob") return drawBlob(ctx,X,Y,s);
   return drawHuman(ctx,X,Y,s,SPRITES.default);
 }
 function makeSprite(key,size){ const c=document.createElement("canvas"); const dpr=window.devicePixelRatio||1;
@@ -555,6 +567,42 @@ function drawBuu(ctx,X,Y,s,kid){ const px=f=>X+f*s,py=f=>Y+f*s,u=f=>f*s; const s
     ctx.fillStyle="#c00"; ctx.beginPath(); ctx.arc(px(.45),py(.27),u(.015),0,7); ctx.arc(px(.55),py(.27),u(.015),0,7); ctx.fill();
     ctx.strokeStyle="#a03a5a"; ctx.lineWidth=u(.02); ctx.beginPath(); ctx.moveTo(px(.4),py(.2)); ctx.lineTo(px(.47),py(.24)); ctx.moveTo(px(.6),py(.2)); ctx.lineTo(px(.53),py(.24)); ctx.stroke();
   } }
+function drawWolf(ctx,X,Y,s){ const px=f=>X+f*s,py=f=>Y+f*s,u=f=>f*s; const c="#8a8f9a",c2="#6a6f7a";
+  ctx.fillStyle="rgba(0,0,0,0.22)"; ctx.beginPath(); ctx.ellipse(px(.5),py(.9),u(.3),u(.06),0,0,7); ctx.fill();
+  ctx.fillStyle=c2; _rr(ctx,px(.28),py(.66),u(.08),u(.2),u(.03)); _rr(ctx,px(.6),py(.66),u(.08),u(.2),u(.03));
+  ctx.fillStyle=c; ctx.beginPath(); ctx.moveTo(px(.72),py(.54)); ctx.quadraticCurveTo(px(.96),py(.42),px(.86),py(.64)); ctx.quadraticCurveTo(px(.8),py(.6),px(.72),py(.54)); ctx.fill();
+  ctx.fillStyle=c; ctx.beginPath(); ctx.ellipse(px(.52),py(.58),u(.28),u(.16),0,0,7); ctx.fill();
+  ctx.fillStyle=c; ctx.beginPath(); ctx.arc(px(.3),py(.44),u(.15),0,7); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(px(.16),py(.46)); ctx.lineTo(px(.32),py(.42)); ctx.lineTo(px(.3),py(.55)); ctx.closePath(); ctx.fill();
+  ctx.fillStyle=c2; _tri(ctx,px(.26),py(.32),px(.22),py(.18),px(.34),py(.32)); _tri(ctx,px(.4),py(.32),px(.44),py(.18),px(.32),py(.32));
+  ctx.fillStyle="#f2c94c"; ctx.beginPath(); ctx.arc(px(.34),py(.42),u(.026),0,7); ctx.fill(); ctx.fillStyle="#111"; ctx.beginPath(); ctx.arc(px(.34),py(.42),u(.012),0,7); ctx.fill();
+  ctx.fillStyle="#111"; ctx.beginPath(); ctx.arc(px(.16),py(.48),u(.02),0,7); ctx.fill(); }
+function drawDino(ctx,X,Y,s){ const px=f=>X+f*s,py=f=>Y+f*s,u=f=>f*s; const c="#5aa84a",c2="#468a38";
+  ctx.fillStyle="rgba(0,0,0,0.22)"; ctx.beginPath(); ctx.ellipse(px(.5),py(.9),u(.28),u(.06),0,0,7); ctx.fill();
+  ctx.fillStyle=c; ctx.beginPath(); ctx.moveTo(px(.68),py(.6)); ctx.quadraticCurveTo(px(.99),py(.66),px(.9),py(.48)); ctx.quadraticCurveTo(px(.8),py(.56),px(.68),py(.6)); ctx.fill();
+  ctx.fillStyle=c2; _rr(ctx,px(.4),py(.68),u(.1),u(.2),u(.03)); _rr(ctx,px(.55),py(.68),u(.1),u(.2),u(.03));
+  ctx.fillStyle=c; ctx.beginPath(); ctx.ellipse(px(.5),py(.56),u(.26),u(.22),0,0,7); ctx.fill();
+  ctx.fillStyle="#cbe0a0"; ctx.beginPath(); ctx.ellipse(px(.5),py(.63),u(.15),u(.11),0,0,7); ctx.fill();
+  ctx.fillStyle=c; ctx.beginPath(); ctx.arc(px(.52),py(.3),u(.16),0,7); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(px(.64),py(.33),u(.1),u(.07),0,0,7); ctx.fill();
+  ctx.fillStyle=c2; _tri(ctx,px(.42),py(.16),px(.46),py(.05),px(.5),py(.16)); _tri(ctx,px(.5),py(.15),px(.54),py(.04),px(.58),py(.15));
+  ctx.fillStyle="#fff"; ctx.beginPath(); ctx.arc(px(.54),py(.28),u(.03),0,7); ctx.fill(); ctx.fillStyle="#111"; ctx.beginPath(); ctx.arc(px(.55),py(.29),u(.014),0,7); ctx.fill();
+  ctx.fillStyle="#fff"; _tri(ctx,px(.6),py(.38),px(.64),py(.38),px(.62),py(.43)); }
+function drawGhost(ctx,X,Y,s){ const px=f=>X+f*s,py=f=>Y+f*s,u=f=>f*s; const c="#e8e8f6";
+  ctx.fillStyle="rgba(0,0,0,0.15)"; ctx.beginPath(); ctx.ellipse(px(.5),py(.9),u(.18),u(.05),0,0,7); ctx.fill();
+  ctx.fillStyle=c; ctx.beginPath(); ctx.arc(px(.5),py(.42),u(.26),Math.PI,2*Math.PI);
+  ctx.lineTo(px(.76),py(.78));
+  for(let i=0;i<3;i++){ const x0=.76-i*0.173; ctx.quadraticCurveTo(px(x0-0.043),py(.87),px(x0-0.086),py(.78)); ctx.quadraticCurveTo(px(x0-0.13),py(.7),px(x0-0.173),py(.78)); }
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle="#3a2a5a"; ctx.beginPath(); ctx.ellipse(px(.42),py(.4),u(.04),u(.06),0,0,7); ctx.ellipse(px(.58),py(.4),u(.04),u(.06),0,0,7); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(px(.5),py(.54),u(.045),u(.055),0,0,7); ctx.fill(); }
+function drawBlob(ctx,X,Y,s){ const px=f=>X+f*s,py=f=>Y+f*s,u=f=>f*s; const c="#f2a0c8";
+  ctx.fillStyle="rgba(0,0,0,0.2)"; ctx.beginPath(); ctx.ellipse(px(.5),py(.9),u(.24),u(.06),0,0,7); ctx.fill();
+  ctx.fillStyle=c; ctx.beginPath(); ctx.ellipse(px(.5),py(.6),u(.3),u(.28),0,0,7); ctx.fill();
+  ctx.fillStyle="rgba(255,255,255,.28)"; ctx.beginPath(); ctx.ellipse(px(.4),py(.5),u(.08),u(.06),0,0,7); ctx.fill();
+  ctx.fillStyle="#fff"; ctx.beginPath(); ctx.arc(px(.42),py(.56),u(.06),0,7); ctx.arc(px(.58),py(.56),u(.06),0,7); ctx.fill();
+  ctx.fillStyle="#111"; ctx.beginPath(); ctx.arc(px(.43),py(.58),u(.03),0,7); ctx.arc(px(.59),py(.58),u(.03),0,7); ctx.fill();
+  ctx.strokeStyle="#a03a5a"; ctx.lineWidth=u(.02); ctx.beginPath(); ctx.arc(px(.5),py(.67),u(.06),0.1*Math.PI,0.9*Math.PI); ctx.stroke(); }
 function drawTurtle(ctx,X,Y,s){ const px=f=>X+f*s,py=f=>Y+f*s,u=f=>f*s;
   ctx.fillStyle="rgba(0,0,0,0.22)"; ctx.beginPath(); ctx.ellipse(px(.5),py(.9),u(.28),u(.06),0,0,7); ctx.fill();
   ctx.fillStyle="#6a9a4a"; _rr(ctx,px(.2),py(.62),u(.13),u(.16),u(.05)); _rr(ctx,px(.67),py(.62),u(.13),u(.16),u(.05));
@@ -782,6 +830,28 @@ const ENEMIES={
     ai:["punch","selfDestruct","punch"],moves:{selfDestruct:{name:"Acid Spit",rate:1.6,ki:0,beam:"#9f9"}}},
   trainbot:{name:"Sparring Bot",av:"🤖",au:"#9cf",hp:300,ki:60,atk:44,def:22,spd:46,pl:2000,trash:true,
     ai:["punch","blast","punch"],moves:{blast:{name:"Practice Blast",rate:1.7,ki:0,beam:"#9cf"}}},
+  wolf:{name:"Dire Wolf",av:"🐺",au:"#9a8a6a",hp:240,ki:20,atk:44,def:16,spd:56,pl:900,trash:true,
+    ai:["punch","lunge","punch"],moves:{lunge:{name:"Fang Rush",rate:1.9}}},
+  bandit:{name:"Desert Bandit",av:"🥷",au:"#a8865a",hp:300,ki:40,atk:46,def:22,spd:46,pl:1100,trash:true,
+    ai:["punch","slash","punch"],moves:{slash:{name:"Blade Slash",rate:2.0}}},
+  dino:{name:"Wild Dino",av:"🦖",au:"#6a9a4a",hp:420,ki:20,atk:50,def:30,spd:30,pl:1400,trash:true,
+    ai:["punch","chomp","punch"],moves:{chomp:{name:"Chomp",rate:2.1}}},
+  soldier:{name:"Frieza Soldier",av:"👽",au:"#9a6bd0",hp:320,ki:60,atk:48,def:26,spd:48,pl:1600,trash:true,
+    ai:["punch","blaster","punch"],moves:{blaster:{name:"Blaster",rate:1.8,beam:"#b08fe0"}}},
+  spacefiend:{name:"Space Fiend",av:"👾",au:"#6accf0",hp:280,ki:50,atk:50,def:20,spd:54,pl:1500,trash:true,
+    ai:["punch","voidbeam","punch"],moves:{voidbeam:{name:"Void Beam",rate:1.9,beam:"#8ccff0"}}},
+  yeti:{name:"Frost Yeti",av:"🧊",au:"#cfe6ff",hp:460,ki:40,atk:52,def:34,spd:28,pl:1800,trash:true,
+    ai:["punch","frost","punch"],moves:{frost:{name:"Frost Breath",rate:2.0,beam:"#cfe6ff"}}},
+  android:{name:"Battle Android",av:"🤖",au:"#8aa8f0",hp:360,ki:80,atk:54,def:30,spd:46,pl:2200,trash:true,
+    ai:["punch","laser","punch"],moves:{laser:{name:"Photon Laser",rate:2.1,beam:"#f06a6a"}}},
+  celljr:{name:"Cell Jr.",av:"🐛",au:"#6fbf7a",hp:340,ki:70,atk:56,def:28,spd:58,pl:2600,trash:true,
+    ai:["punch","kamejr","punch"],moves:{kamejr:{name:"Junior Kamehameha",rate:2.2,beam:"#9fd9c0"}}},
+  ghost:{name:"Lost Spirit",av:"👻",au:"#ccccf0",hp:260,ki:60,atk:46,def:18,spd:52,pl:1300,trash:true,
+    ai:["punch","wail","punch"],moves:{wail:{name:"Spirit Wail",rate:1.9,beam:"#ccccf0"}}},
+  imp:{name:"Majin Imp",av:"😈",au:"#c06bd0",hp:320,ki:70,atk:50,def:24,spd:50,pl:2000,trash:true,
+    ai:["punch","hex","punch"],moves:{hex:{name:"Dark Hex",rate:2.0,beam:"#b86bd0"}}},
+  blob:{name:"Pink Spawn",av:"🫧",au:"#f2a0c8",hp:380,ki:40,atk:48,def:26,spd:40,pl:1700,trash:true,regenPerTurn:0.02,
+    ai:["punch","stretch","punch"],moves:{stretch:{name:"Stretch Punch",rate:2.0}}},
   raditz:{name:"Raditz",av:"👹",au:"#8a5",hp:420,ki:60,atk:50,def:24,spd:44,pl:1500,
     ai:["punch","punch","doubleSunday"],moves:{doubleSunday:{name:"Double Sunday",rate:2.0,ki:0,beam:"#9f9"}}},
   nappa:{name:"Nappa",av:"👺",au:"#c66",hp:640,ki:60,atk:60,def:34,spd:36,pl:4000,
@@ -924,7 +994,7 @@ const MAPS={
       {x:13,y:11,av:"🐢",name:"Master Roshi",lines:["Ki runs out — don't just spam your biggest blast."]},
       {x:18,y:6,av:"🐺",name:"Yamcha",role:"train",lines:["Spar with my bots for XP and Zeni!"]}],
     recruits:[{x:6,y:6,fid:"gohan",intro:["Dad! Let me help!","...Alright, Gohan."]},{x:15,y:4,fid:"piccolo",intro:["We share an enemy, Goku.","I'll fight beside you."]}],
-    enemies:[{x:11,y:6,eid:"saibaman"},{x:15,y:10,eid:"saibaman"},{x:8,y:8,eid:"saibaman"}],
+    enemies:[{x:11,y:6,eid:"saibaman"},{x:15,y:10,eid:"wolf"},{x:8,y:8,eid:"saibaman"}],
     boss:{x:21,y:6,storyIdx:0,name:"Raditz",av:"👹",intro:["So this is Earth...","Prepare yourselves!"]},
     exits:[{x:22,y:6,to:"westcity",tx:2,ty:6}], start:{x:3,y:6}},
 
@@ -934,7 +1004,7 @@ const MAPS={
       {x:17,y:5,av:"🐺",name:"Yamcha",role:"train",lines:["City gym's open — let's spar."]},
       {x:9,y:10,av:"👴",name:"Ox-King",lines:["Take care of my daughter Chi-Chi, hero."]},
       {x:14,y:11,av:"👩‍⚕️",name:"Nurse",role:"heal",lines:["Rest up — you look worn out."]}],
-    enemies:[{x:13,y:6,eid:"saibaman"},{x:8,y:8,eid:"saibaman"}],
+    enemies:[{x:13,y:6,eid:"bandit"},{x:8,y:8,eid:"android"}],
     exits:[{x:1,y:6,to:"paozu",tx:20,ty:6},{x:22,y:6,to:"wasteland",tx:2,ty:6},{x:12,y:1,to:"kamehouse",tx:10,ty:9}], start:{x:2,y:6}},
 
   kamehouse:{name:"Kame House",env:"beach",music:"calm",amb:600,hint:"Master Roshi's island. Heal, shop, and an old friend joins.",
@@ -951,7 +1021,7 @@ const MAPS={
     npcs:[{x:5,y:10,av:"🐱",name:"Korin",role:"heal",lines:["Have a Senzu — good as new!"]},
       {x:8,y:3,av:"👩‍🔧",name:"Bulma",role:"shop",shopName:"Capsule Corp",lines:["Restock before Nappa flattens you."]},
       {x:19,y:4,av:"🐺",name:"Yamcha",role:"train",lines:["Grind a few levels — smart move."]}],
-    enemies:[{x:11,y:5,eid:"saibaman"},{x:14,y:9,eid:"saibaman"},{x:17,y:6,eid:"saibaman"},{x:10,y:11,eid:"saibaman"}],
+    enemies:[{x:11,y:5,eid:"saibaman"},{x:14,y:9,eid:"dino"},{x:17,y:6,eid:"bandit"},{x:10,y:11,eid:"wolf"}],
     boss:{x:12,y:3,storyIdx:1,name:"Nappa",av:"👺",intro:["You're all bugs to me!","Let's see you scratch me!"]},
     exits:[{x:1,y:6,to:"westcity",tx:20,ty:6},{x:22,y:6,to:"battlefield",tx:2,ty:6}], start:{x:2,y:6}},
 
@@ -959,7 +1029,7 @@ const MAPS={
     grid:mkGrid(24,14,"R",[{c:"R",x:7,y:4,w:2,h:2},{c:"R",x:16,y:8,w:2},{c:"R",x:12,y:3},{c:"<",x:1,y:6},{c:">",x:22,y:7}]),
     npcs:[{x:4,y:9,av:"🐱",name:"Korin",role:"heal",lines:["Almost through the Saiyans — heal up."]},
       {x:6,y:11,av:"🐺",name:"Yamcha",role:"train",lines:["Vegeta's no joke. Train first."]}],
-    enemies:[{x:10,y:6,eid:"saibaman"},{x:15,y:5,eid:"saibaman"},{x:18,y:10,eid:"saibaman"}],
+    enemies:[{x:10,y:6,eid:"saibaman"},{x:15,y:5,eid:"dino"},{x:18,y:10,eid:"bandit"}],
     boss:{x:20,y:9,storyIdx:2,name:"Vegeta",av:"🦍",intro:["I am the Prince of all Saiyans!","This is where you die."]},
     exits:[{x:1,y:6,to:"wasteland",tx:20,ty:6},{x:22,y:7,to:"snakeway",tx:2,ty:7}], start:{x:2,y:6}},
 
@@ -967,7 +1037,7 @@ const MAPS={
     grid:mkGrid(26,14,"R",[{c:"R",x:8,y:4},{c:"R",x:14,y:9},{c:"R",x:20,y:5},{c:"<",x:1,y:7},{c:">",x:24,y:7},{c:">",x:12,y:1}]),
     npcs:[{x:6,y:7,av:"🐉",name:"Princess Snake",lines:["Stay on the path, traveler... or be lost forever."]},
       {x:18,y:6,av:"🐺",name:"Yamcha",role:"train",lines:["Long road. Spar to pass the time."]}],
-    enemies:[{x:10,y:7,eid:"saibaman"},{x:16,y:8,eid:"saibaman"},{x:21,y:9,eid:"saibaman"}],
+    enemies:[{x:10,y:7,eid:"spacefiend"},{x:16,y:8,eid:"ghost"},{x:21,y:9,eid:"yeti"}],
     exits:[{x:1,y:7,to:"battlefield",tx:20,ty:7},{x:24,y:7,to:"namek",tx:2,ty:6},{x:12,y:1,to:"kingkai",tx:10,ty:9}], start:{x:2,y:7}},
 
   kingkai:{name:"King Kai's Planet",env:"kai",music:"sacred",amb:640,hint:"A tiny world with heavy gravity. Train hard; grow strong.",
@@ -983,7 +1053,7 @@ const MAPS={
     npcs:[{x:12,y:4,av:"🟩",name:"Dende",role:"heal",lines:["I am Dende. Let me heal you."]},
       {x:4,y:9,av:"👴",name:"Elder Guru",lines:["Your hidden power sleeps... it will awaken."]},
       {x:16,y:2,av:"👩‍🔧",name:"Bulma",role:"shop",shopName:"Capsule Corp",lines:["Even on Namek, Capsule Corp delivers."]}],
-    enemies:[{x:9,y:4,eid:"saibaman"},{x:18,y:8,eid:"saibaman"},{x:8,y:12,eid:"saibaman"}],
+    enemies:[{x:9,y:4,eid:"soldier"},{x:18,y:8,eid:"spacefiend"},{x:8,y:12,eid:"soldier"}],
     boss:{x:8,y:3,storyIdx:3,name:"Captain Ginyu",av:"🐸",intro:["The Ginyu Force never loses!","Fight!"]},
     exits:[{x:1,y:6,to:"snakeway",tx:22,ty:7},{x:22,y:7,to:"friezaship",tx:2,ty:6}], start:{x:2,y:6}},
 
@@ -992,7 +1062,7 @@ const MAPS={
     npcs:[{x:4,y:9,av:"🟩",name:"Dende",role:"heal",lines:["Be careful — his power is beyond anything."]},
       {x:8,y:11,av:"👩‍🔧",name:"Bulma",role:"shop",shopName:"Capsule Corp",lines:["Last chance to stock Senzu!"]},
       {x:16,y:11,av:"🐺",name:"Yamcha",role:"train",lines:["Push past your limits before you face him."]}],
-    enemies:[{x:11,y:5,eid:"saibaman"},{x:16,y:6,eid:"saibaman"}],
+    enemies:[{x:11,y:5,eid:"soldier"},{x:16,y:6,eid:"android"}],
     boss:{x:20,y:6,storyIdx:4,name:"Frieza",av:"👾",intro:["I've destroyed a hundred planets before breakfast.","You are nothing."]},
     exits:[{x:1,y:6,to:"namek",tx:20,ty:7},{x:22,y:6,to:"otherworld",tx:2,ty:6}], start:{x:2,y:6}},
 
@@ -1000,7 +1070,7 @@ const MAPS={
     grid:mkGrid(26,14,"R",[{c:"R",x:6,y:4},{c:"R",x:20,y:9},{c:"R",x:13,y:6},{c:"<",x:1,y:6},{c:">",x:24,y:6},{c:">",x:8,y:1},{c:">",x:17,y:1}]),
     npcs:[{x:11,y:6,av:"😇",name:"Grand Kai",role:"heal",lines:["Rest, warrior. The hardest battles lie ahead."]},
       {x:4,y:9,av:"👩‍🔧",name:"Bulma",role:"shop",shopName:"Capsule Corp",lines:["Even the afterlife needs supplies!"]}],
-    enemies:[{x:14,y:9,eid:"trainbot"},{x:19,y:5,eid:"trainbot"}],
+    enemies:[{x:14,y:9,eid:"ghost"},{x:19,y:5,eid:"spacefiend"}],
     exits:[{x:1,y:6,to:"friezaship",tx:20,ty:6},{x:24,y:6,to:"cellgames",tx:2,ty:6},{x:8,y:1,to:"hyperbolic",tx:10,ty:9},{x:17,y:1,to:"lookout",tx:10,ty:9}], start:{x:2,y:6}},
 
   hyperbolic:{name:"Hyperbolic Time Chamber",env:"voidw",music:"sacred",amb:800,hint:"A day inside is a year out. The ultimate training ground.",
@@ -1022,7 +1092,7 @@ const MAPS={
     grid:mkGrid(24,14,"R",[{c:"R",x:6,y:3,w:2},{c:"R",x:17,y:9,w:2},{c:"R",x:12,y:10},{c:"<",x:1,y:6},{c:">",x:22,y:6}]),
     npcs:[{x:4,y:9,av:"🟩",name:"Dende",role:"heal",lines:["The whole world is watching. Give it everything."]},
       {x:7,y:11,av:"🐺",name:"Yamcha",role:"train",lines:["One last spar before the Games?"]}],
-    enemies:[{x:11,y:6,eid:"trainbot"},{x:16,y:5,eid:"trainbot"}],
+    enemies:[{x:11,y:6,eid:"celljr"},{x:16,y:5,eid:"android"}],
     boss:{x:20,y:6,storyIdx:5,name:"Perfect Cell",av:"🪲",intro:["Welcome to the Cell Games.","Show me your desperation!"]},
     exits:[{x:1,y:6,to:"otherworld",tx:22,ty:6},{x:22,y:6,to:"kaiworld",tx:2,ty:6}], start:{x:2,y:6}},
 
@@ -1031,27 +1101,27 @@ const MAPS={
     npcs:[{x:5,y:8,av:"🧝",name:"Supreme Kai",role:"heal",lines:["Only you can stop what's coming."]},
       {x:8,y:11,av:"👩‍🔧",name:"Bulma",role:"shop",shopName:"Capsule Corp",lines:["Stock up — this is the end game."]},
       {x:17,y:4,av:"🐺",name:"Yamcha",role:"train",lines:["Last training grounds. Make them count."]}],
-    enemies:[{x:13,y:7,eid:"trainbot"},{x:18,y:9,eid:"trainbot"}],
+    enemies:[{x:13,y:7,eid:"imp"},{x:18,y:9,eid:"celljr"}],
     exits:[{x:1,y:6,to:"cellgames",tx:20,ty:6},{x:22,y:6,to:"buumap",tx:2,ty:6},{x:12,y:1,to:"babidiship",tx:10,ty:9}], start:{x:2,y:6}},
 
   babidiship:{name:"Babidi's Ship",env:"darkship",music:"eerie",amb:380,hint:"A dungeon of dark magic. Trials wait in every chamber.",
     grid:mkGrid(20,12,"R",[{c:"R",x:6,y:4},{c:"R",x:13,y:6},{c:"H",x:9,y:3},{c:"<",x:10,y:10}]),
     npcs:[{x:7,y:6,av:"🧙",name:"Old Witch",role:"shop",shopName:"Dark Bazaar",lines:["Rare goods... for a price."]}],
-    enemies:[{x:11,y:5,eid:"trainbot"},{x:6,y:8,eid:"trainbot"},{x:14,y:8,eid:"trainbot"}],
+    enemies:[{x:11,y:5,eid:"imp"},{x:6,y:8,eid:"ghost"},{x:14,y:8,eid:"imp"}],
     exits:[{x:10,y:10,to:"kaiworld",tx:12,ty:2}], start:{x:10,y:9}},
 
   buumap:{name:"Buu's Domain",env:"candy",music:"finalboss",amb:420,hint:"A world remade into candy. The djinn plays among the ruins.",
     grid:mkGrid(24,14,"T",[{c:"T",x:7,y:4},{c:"R",x:16,y:9},{c:"~",x:11,y:6,w:2},{c:"<",x:1,y:6},{c:">",x:22,y:6}]),
     npcs:[{x:4,y:9,av:"🧝",name:"Supreme Kai",role:"heal",lines:["Buu is chaos itself. Stay sharp."]},
       {x:7,y:11,av:"🐺",name:"Yamcha",role:"train",lines:["The very end. One more spar?"]}],
-    enemies:[{x:10,y:5,eid:"trainbot"},{x:15,y:6,eid:"trainbot"}],
+    enemies:[{x:10,y:5,eid:"blob"},{x:15,y:6,eid:"imp"}],
     boss:{x:20,y:6,storyIdx:6,name:"Majin Buu",av:"🍬",intro:["Buu turn you into candy!","Hee hee hee!"]},
     exits:[{x:1,y:6,to:"kaiworld",tx:20,ty:6},{x:22,y:6,to:"worldsend",tx:2,ty:6}], start:{x:2,y:6}},
 
   worldsend:{name:"The Source of Nothing",env:"space",music:"finalboss",amb:760,hint:"The end of everything. Pure destruction incarnate awaits.",
     grid:mkGrid(24,14,"R",[{c:"R",x:8,y:4},{c:"R",x:16,y:9},{c:"R",x:12,y:5},{c:"<",x:1,y:6}]),
     npcs:[{x:4,y:9,av:"🟩",name:"Dende",role:"heal",lines:["Everyone's energy is with you now. Go!"]}],
-    enemies:[{x:11,y:7,eid:"trainbot"}],
+    enemies:[{x:11,y:7,eid:"blob"}],
     boss:{x:20,y:6,storyIdx:7,name:"Kid Buu",av:"😈",intro:["...","(pure destruction incarnate)"]},
     exits:[{x:1,y:6,to:"buumap",tx:20,ty:6}], start:{x:2,y:6}},
 };
@@ -1537,14 +1607,17 @@ function afterEnemy(e){ $("#hud").classList.remove("show"); setTimeout(()=>advan
 function checkEnd(){ if(B.over)return true;
   if(!livingAllies().length){ B.over=true; endBattle(false); return true; }
   if(!livingEnemies().length){ B.over=true; endBattle(true); return true; } return false; }
-const REWARD={ saibaman:{xp:24,zeni:14}, trainbot:{xp:0,zeni:0}, raditz:{xp:70,zeni:45}, nappa:{xp:110,zeni:70},
-  vegeta_s:{xp:180,zeni:130}, ginyu:{xp:280,zeni:200}, frieza:{xp:640,zeni:520}, cell:{xp:950,zeni:720},
-  buu:{xp:1300,zeni:900}, kidbuu:{xp:1750,zeni:1300} };
-function computeRewards(enemyIds){ let xp=0,zeni=0; const drops=[];
-  enemyIds.forEach(eid=>{ const r=REWARD[eid]||{xp:20,zeni:10};
-    if(eid==="trainbot"){ xp+=Math.round(28*avgLevel()); zeni+=Math.round(14*avgLevel()); }
+// trash rewards are per-kill bases scaled by party level (grinding stays worthwhile); bosses are flat.
+const REWARD={ saibaman:{xp:14,zeni:8}, trainbot:{xp:16,zeni:9}, wolf:{xp:12,zeni:7}, bandit:{xp:14,zeni:8},
+  dino:{xp:16,zeni:9}, soldier:{xp:16,zeni:10}, spacefiend:{xp:15,zeni:9}, yeti:{xp:18,zeni:11}, android:{xp:20,zeni:12},
+  celljr:{xp:22,zeni:13}, ghost:{xp:14,zeni:9}, imp:{xp:18,zeni:11}, blob:{xp:16,zeni:10},
+  raditz:{xp:70,zeni:45}, nappa:{xp:110,zeni:70}, vegeta_s:{xp:180,zeni:130}, ginyu:{xp:280,zeni:200},
+  frieza:{xp:640,zeni:520}, cell:{xp:950,zeni:720}, buu:{xp:1300,zeni:900}, kidbuu:{xp:1750,zeni:1300} };
+function computeRewards(enemyIds){ let xp=0,zeni=0; const drops=[]; const lv=avgLevel();
+  enemyIds.forEach(eid=>{ const E=ENEMIES[eid]; const r=REWARD[eid]||{xp:16,zeni:9};
+    if(E&&E.trash){ xp+=Math.round(r.xp*(0.7+0.45*lv)); zeni+=Math.round(r.zeni*(0.7+0.45*lv));
+      if(chance(0.35))drops.push("hcap"); if(chance(0.12))drops.push("kcap"); }
     else { xp+=r.xp; zeni+=r.zeni; }
-    if(ENEMIES[eid]&&ENEMIES[eid].trash){ if(chance(0.35))drops.push("hcap"); if(chance(0.12))drops.push("kcap"); }
     if(chance(0.06))drops.push("senzu"); });
   return {xp,zeni,drops}; }
 function endBattle(won){

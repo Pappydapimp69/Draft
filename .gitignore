@@ -1,0 +1,3 @@
+
+# Brain CLI local store (machine-specific; not shared)
+.brain/
